@@ -215,7 +215,8 @@ int main(int argc, char** argv) {
         cv::Point3d( ss,  ss, sz),
         cv::Point3d(-ss,  ss, sz),
       };
-
+      
+      /* Possible edges of the box created. Come back to THIS*/
       int edges[nedges][2] = {
 
         { 0, 1 },
@@ -238,7 +239,7 @@ int main(int argc, char** argv) {
       cv::Point2d dst[npoints];
 
       double f = opts.focal_length;
-
+      /* Optical centers, possible 2D config*/
       double K[9] = {
         f, 0, opticalCenter.x,
         0, f, opticalCenter.y,
@@ -314,7 +315,7 @@ int main(int argc, char** argv) {
     }
 
   }    
-
+  /* Report times of position? */
   detector.reportTimers();
 
   return 0;
