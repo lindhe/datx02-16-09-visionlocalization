@@ -197,11 +197,7 @@ int main(int argc, char** argv) {
     vc >> frame;
     if (frame.empty()) { break; }
     
-    //clock_t start = clock(); --- Originally tried to be used for better locking
-    // no longer needed
     detector.process(frame, opticalCenter, detections);
-    //clock_t end = clock();
-    //printf("Elapsed time: %.2f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
     
 
     cv::Mat show;
@@ -218,7 +214,6 @@ int main(int argc, char** argv) {
   
       //show = family.superimposeDetections(frame, detections); //-- Used to actually
       //superimpose tag image in video
-      //show = family.superimposeDetection(frame, detections[0]);
       show = frame;
 
       double s = opts.tag_size;
