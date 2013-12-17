@@ -17,9 +17,11 @@
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
+
 #include "CameraUtil.h"
 
 #define DEFAULT_TAG_FAMILY "Tag36h11"
+using namespace std;
 
 typedef struct CamTestOptions {
   CamTestOptions() :
@@ -31,6 +33,8 @@ typedef struct CamTestOptions {
       tag_size(0.1905),
       frame_width(0),
       frame_height(0),
+      /* Changed to False so that text comes out correctly. */
+      /* Issues with detection when set to False */
       mirror_display(true)
   {
   }
@@ -169,7 +173,8 @@ int main(int argc, char** argv) {
     std::cerr << "no frames!\n";
     exit(1);
   }
-
+  
+  /* Optical Center of video capturing frame with X and Y coordinates */
   opticalCenter.x = frame.cols * 0.5;
   opticalCenter.y = frame.rows * 0.5;
 
@@ -186,25 +191,40 @@ int main(int argc, char** argv) {
 
     vc >> frame;
     if (frame.empty()) { break; }
-
+    
+    //clock_t start = clock();
     detector.process(frame, opticalCenter, detections);
+    //clock_t end = clock();
+    //printf("Elapsed time: %.2f seconds\n", (double)(end - start) / CLOCKS_PER_SEC);
+    
 
     cv::Mat show;
     if (detections.empty()) {
 
       show = frame;
+      string idToText = "---Nothing Detected---";
+        putText(frame, idToText, 
+	     cvPoint(30,30), 
+             cv::FONT_HERSHEY_PLAIN, 
+             1.5, cvScalar(180,250,0), 1, CV_AA);
 
-    } else {
+    } else /*if(!detections.empty() && ((double)(end - start) / CLOCKS_PER_SEC) > 2.0)*/ {
+      //printf("--- Locked ---");
 
-      //show = family.superimposeDetections(frame, detections);
+      //show = family.superimposeDetections(frame, detections); //-- Used to actually
+      //superimpose tag image in video
+      //show = family.superimposeDetection(frame, detections[0]);
       show = frame;
 
       double s = opts.tag_size;
       double ss = 0.5*s;
-      double sz = s;
+      /* sz changed to negative value to flip cube */
+      double sz = -s;
 
       enum { npoints = 8, nedges = 12 };
 
+      /* Possible place to flip cube */
+      /* Cube fliped by changing sz to negative */
       cv::Point3d src[npoints] = {
         cv::Point3d(-ss, -ss, 0),
         cv::Point3d( ss, -ss, 0),
@@ -215,6 +235,7 @@ int main(int argc, char** argv) {
         cv::Point3d( ss,  ss, sz),
         cv::Point3d(-ss,  ss, sz),
       };
+      /*printf("----------SS: %lf\n", ss);*/
       
       /* Possible edges of the box created. Come back to THIS*/
       int edges[nedges][2] = {
@@ -224,16 +245,17 @@ int main(int argc, char** argv) {
         { 2, 3 },
         { 3, 0 },
 
+        /* Comment out two matrices below for 2D box */
         { 4, 5 },
         { 5, 6 },
         { 6, 7 },
         { 7, 4 },
-
+        
         { 0, 4 },
         { 1, 5 },
         { 2, 6 },
         { 3, 7 }
-
+        
       };
 
       cv::Point2d dst[npoints];
@@ -254,6 +276,12 @@ int main(int argc, char** argv) {
       cv::Mat_<double>      distCoeffs = cv::Mat_<double>::zeros(4,1);
 
       for (size_t i=0; i<detections.size(); ++i) {
+	// Code to print our ID of detections in Frame: TODO: Still getting segmentation fault	
+	//string idToText = "---Tag ID: " + string (detections[i].id) + "---"; //use sprintf()
+        //putText(frame, idToText, 
+	     //cvPoint(30,30), 
+             //cv::FONT_HERSHEY_PLAIN, 
+             //1.5, cvScalar(200,200,250), 1, CV_AA);
 
         //for (cvPose=0; cvPose<2; ++cvPose) {
         if (1) {
@@ -284,12 +312,14 @@ int main(int argc, char** argv) {
 
           cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
 
+	  /* Used to draw lines on video image */
           for (int j=0; j<nedges; ++j) {
             cv::line(show, 
                      dstmat(edges[j][0],0),
                      dstmat(edges[j][1],0),
-                     cvPose ? CV_RGB(0,255,0) : CV_RGB(255,0,0),
+                     cvPose ? CV_RGB(0,0,255) : CV_RGB(255,0,0),
                      1, CV_AA);
+	    
           }
 
         }
