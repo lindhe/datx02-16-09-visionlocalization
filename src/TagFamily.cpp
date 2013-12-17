@@ -130,7 +130,7 @@ at::uint TagFamily::popCount(TagFamily::code_t w) {
 void TagFamily::decode(TagDetection& det, TagFamily::code_t rcode) const {
 
   size_t bestid = -1;
-  uint besthamming = uint(-1);
+  uint besthamming = uint(-1);//Changed to -5 for testing. Originally -1
   int  bestrotation = 0;
   code_t bestcode = 0;
 
@@ -145,16 +145,20 @@ void TagFamily::decode(TagDetection& det, TagFamily::code_t rcode) const {
 
     for (int rot = 0; rot < 4; rot++) {
       uint thishamming = hammingDistance(rcodes[rot], codes[id]);
+      if(thishamming>0){ continue;} //Added for possible strictness to detection
       if (thishamming < besthamming) {
         besthamming = thishamming;
         bestrotation = rot;
         bestid = id;
+	printf("---Tag ID: %zu ---\n", bestid); //print ID being detected
         bestcode = codes[id];
       }
     }
   }
 
   det.id = bestid;
+  //Print here to get ID
+  //printf("---Tag ID: %zu ---\n", bestid);
   det.hammingDistance = besthamming;
   det.rotation = bestrotation;
   det.good = (det.hammingDistance <= errorRecoveryBits);
