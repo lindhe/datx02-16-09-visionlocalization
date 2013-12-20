@@ -43,6 +43,8 @@ public:
   at::Point p[4];
 
   /** Center of tag in pixel coordinates. **/
+  /** Used to print out Tag Coordinates **/
+  /** ---In GulliView implementation lines 279-286--- **/
   at::Point cxy;
 
   /** Measured in pixels, how long was the observed perimeter

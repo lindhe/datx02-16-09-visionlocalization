@@ -235,7 +235,6 @@ int main(int argc, char** argv) {
         cv::Point3d( ss,  ss, sz),
         cv::Point3d(-ss,  ss, sz),
       };
-      /*printf("----------SS: %lf\n", ss);*/
       
       /* Possible edges of the box created. Come back to THIS*/
       int edges[nedges][2] = {
@@ -277,11 +276,12 @@ int main(int argc, char** argv) {
 
       for (size_t i=0; i<detections.size(); ++i) {
 	TagDetection &dd = detections[i];
-	// Code to print our ID of detections in Frame: TODO: Still getting segmentation fault	
+	// Print out Tag ID in center of Tag	
         putText(frame, helper::num2str(dd.id), 
-	     cv::Point(dd.cxy.x,dd.cxy.y), //Now printing the ID in Center of Detected box
+	     cv::Point(dd.cxy.x,dd.cxy.y), 
              CV_FONT_NORMAL, 
              1.0, cvScalar(0,250,0), 2, CV_AA);
+	// Print out TagID and current Tag coordinates
 	std::cout << "---TagID---: " << dd.id << "\n";
 	std::cout << "---Coordinates---: " << dd.cxy << "\n";
 
