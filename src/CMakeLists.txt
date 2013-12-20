@@ -16,8 +16,8 @@ set(AT_LIBS apriltags ${OPENCV_LDFLAGS})
 add_executable(camtest camtest.cpp)
 target_link_libraries(camtest ${AT_LIBS})
 
-add_executable(gulliView gulliView.cpp)
-target_link_libraries(gulliView ${AT_LIBS})
+add_executable(GulliView GulliView.cpp)
+target_link_libraries(GulliView ${AT_LIBS})
 
 add_executable(tagtest tagtest.cpp)
 target_link_libraries(tagtest ${AT_LIBS})
