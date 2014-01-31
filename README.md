@@ -3,6 +3,13 @@ apriltags-cpp
 
 C++ port of the APRIL tags library, using OpenCV (and optionally, CGAL).
 
+Code has been modified for Vision Based Localization of Autonomous
+Vehicles in the Gulliver Project at Chalmers University, Sweden
+
+Modification Authors:
+Andrew Soderberg-Rivkin <sandrew@student.chalmers.se>
+Sanjana Hangal <sanjana@student.chalmers.se>
+
 Requirements
 ============
 
