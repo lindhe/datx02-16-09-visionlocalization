@@ -4,6 +4,12 @@
  *
  * Original author: Edwin Olson <ebolson@umich.edu>
  * C++ port and modifications: Matt Zucker <mzucker1@swarthmore.edu>
+ * ----------------------- Modified ---------------------------------e
+ * Code modified for project in Vision Based Localization for
+ * Autonomous Vehicles at Chalmers University, Goteborg, Sweden
+ * Modification Authors: 
+ * Andrew Soderberg-Rivkin <sandrew@student.chalmers.se>
+ * Sanjana Hangal <sanjana@student.chalmers.se>
  ********************************************************************/
 
 #include "TagDetector.h"
@@ -62,37 +68,26 @@ void print_usage(const char* tool_name, FILE* output=stderr) {
 
   fprintf(output, "\
 Usage: %s [OPTIONS]\n\
-Run a tool to test tag detection. Options:\n\
+GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
  -h              Show this help message.\n\
- -D              Use decimation for segmentation stage.\n\
- -S SIGMA        Set the original image sigma value (default %.2f).\n\
- -s SEGSIGMA     Set the segmentation sigma value (default %.2f).\n\
- -a THETATHRESH  Set the theta threshold for clustering (default %.1f).\n\
- -m MAGTHRESH    Set the magnitude threshold for clustering (default %.1f).\n\
- -V VALUE        Set adaptive threshold value for new quad algo (default %f).\n\
- -N RADIUS       Set adaptive threshold radius for new quad algo (default %d).\n\
- -b              Refine bad quads using template tracker.\n\
- -r              Refine all quads using template tracker.\n\
- -n              Use the new quad detection algorithm.\n\
  -f FAMILY       Look for the given tag family (default \"%s\")\n\
- -e FRACTION     Set error detection fraction (default %f)\n\
  -d DEVICE       Set camera device number (default %d)\n\
- -F FLENGTH      Set the camera's focal length in pixels (default %f)\n\
  -z SIZE         Set the tag size in meters (default %f)\n\
  -W WIDTH        Set the camera image width in pixels\n\
  -H HEIGHT       Set the camera image height in pixels\n\
  -M              Toggle display mirroring\n",
           tool_name,
-          p.sigma,
-          p.segSigma,
-          p.thetaThresh,
-          p.magThresh,
-          p.adaptiveThresholdValue,
-          p.adaptiveThresholdRadius,
+	  /* Options removed that are not needed */
+          //p.sigma,
+          //p.segSigma,
+          //p.thetaThresh,
+          //p.magThresh,
+          //p.adaptiveThresholdValue,
+          //p.adaptiveThresholdRadius,
           DEFAULT_TAG_FAMILY,
-          o.error_fraction,
+          //o.error_fraction,
           o.device_num,
-          o.focal_length,
+          //o.focal_length,
           o.tag_size);
 
 
@@ -102,6 +97,20 @@ Run a tool to test tag detection. Options:\n\
     fprintf(output, " %s", known[i].c_str());
   }
   fprintf(output, "\n");
+  /* Old Options removed can be re-added if they are needed. Default values set for now: 
+   * -D              Use decimation for segmentation stage.\n\
+   * -S SIGMA        Set the original image sigma value (default %.2f).\n\
+   * -s SEGSIGMA     Set the segmentation sigma value (default %.2f).\n\
+   * -a THETATHRESH  Set the theta threshold for clustering (default %.1f).\n\
+   * -m MAGTHRESH    Set the magnitude threshold for clustering (default %.1f).\n\
+   * -V VALUE        Set adaptive threshold value for new quad algo (default %f).\n\
+   * -N RADIUS       Set adaptive threshold radius for new quad algo (default %d).\n\
+   * -b              Refine bad quads using template tracker.\n\
+   * -r              Refine all quads using template tracker.\n\
+   * -n              Use the new quad detection algorithm.\n\
+   * -e FRACTION     Set error detection fraction (default %f)\n\
+   * -F FLENGTH      Set the camera's focal length in pixels (default %f)\n\
+   */
 }
 
 GulliViewOptions parse_options(int argc, char** argv) {
@@ -112,20 +121,20 @@ GulliViewOptions parse_options(int argc, char** argv) {
     switch (c) {
       // Reminder: add new options to 'options_str' above and print_usage()!
       case 'h': print_usage(argv[0], stdout); exit(0); break;
-      case 'D': opts.params.segDecimate = true; break;
-      case 'S': opts.params.sigma = atof(optarg); break;
-      case 's': opts.params.segSigma = atof(optarg); break;
-      case 'a': opts.params.thetaThresh = atof(optarg); break;
-      case 'm': opts.params.magThresh = atof(optarg); break;
-      case 'V': opts.params.adaptiveThresholdValue = atof(optarg); break;
-      case 'N': opts.params.adaptiveThresholdRadius = atoi(optarg); break;
-      case 'b': opts.params.refineBad = true; break;
-      case 'r': opts.params.refineQuads = true; break;
-      case 'n': opts.params.newQuadAlgorithm = true; break;
+      //case 'D': opts.params.segDecimate = true; break;
+      //case 'S': opts.params.sigma = atof(optarg); break;
+      //case 's': opts.params.segSigma = atof(optarg); break;
+      //case 'a': opts.params.thetaThresh = atof(optarg); break;
+      //case 'm': opts.params.magThresh = atof(optarg); break;
+      //case 'V': opts.params.adaptiveThresholdValue = atof(optarg); break;
+      //case 'N': opts.params.adaptiveThresholdRadius = atoi(optarg); break;
+      //case 'b': opts.params.refineBad = true; break;
+      //case 'r': opts.params.refineQuads = true; break;
+      //case 'n': opts.params.newQuadAlgorithm = true; break;
       case 'f': opts.family_str = optarg; break;
-      case 'e': opts.error_fraction = atof(optarg); break;
+      //case 'e': opts.error_fraction = atof(optarg); break;
       case 'd': opts.device_num = atoi(optarg); break;
-      case 'F': opts.focal_length = atof(optarg); break;
+      //case 'F': opts.focal_length = atof(optarg); break;
       case 'z': opts.tag_size = atof(optarg); break;
       case 'W': opts.frame_width = atoi(optarg); break;
       case 'H': opts.frame_height = atoi(optarg); break;
@@ -141,7 +150,10 @@ GulliViewOptions parse_options(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-
+  
+  //Buffer to hold tags and coordinates
+  char* buffer = new char[100];
+  
   GulliViewOptions opts = parse_options(argc, argv);
 
   TagFamily family(opts.family_str);
@@ -183,7 +195,7 @@ int main(int argc, char** argv) {
   opticalCenter.x = frame.cols * 0.5;
   opticalCenter.y = frame.rows * 0.5;
 
-  std::string win = "Cam tag test";
+  std::string win = "GulliViewer";
 
   TagDetectorParams& params = opts.params;
   TagDetector detector(family, params);
@@ -223,7 +235,6 @@ int main(int argc, char** argv) {
 
       enum { npoints = 8, nedges = 12 };
 
-      /* Possible place to flip cube */
       /* Cube fliped by changing sz to negative */
       cv::Point3d src[npoints] = {
         cv::Point3d(-ss, -ss, 0),
@@ -275,15 +286,22 @@ int main(int argc, char** argv) {
       cv::Mat_<double>      distCoeffs = cv::Mat_<double>::zeros(4,1);
 
       for (size_t i=0; i<detections.size(); ++i) {
-	TagDetection &dd = detections[i];
+	//Add code in order to copy and send array
+        //Static buffer
+        TagDetection &dd = detections[i];
 	// Print out Tag ID in center of Tag	
         putText(frame, helper::num2str(dd.id), 
 	     cv::Point(dd.cxy.x,dd.cxy.y), 
              CV_FONT_NORMAL, 
              1.0, cvScalar(0,250,0), 2, CV_AA);
-	// Print out TagID and current Tag coordinates
-	std::cout << "---TagID---: " << dd.id << "\n";
+	// Print out TagID and current Tag coordinates	
+	// Output added to buffer (One packet per frame)
+	std::string outPut = "Tag ID: " + helper::num2str(dd.id); 
+	//std::cout << "---TagID---: " << dd.id << "\n";
+	std::cout << outPut << "\n";
+	//Change coordinates to int, lose the extra decimal places
 	std::cout << "---Coordinates---: " << dd.cxy << "\n";
+	//Add code to add variables to buffer created
 
         //for (cvPose=0; cvPose<2; ++cvPose) {
         if (1) {
