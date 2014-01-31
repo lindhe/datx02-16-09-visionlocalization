@@ -145,12 +145,12 @@ void TagFamily::decode(TagDetection& det, TagFamily::code_t rcode) const {
 
     for (int rot = 0; rot < 4; rot++) {
       uint thishamming = hammingDistance(rcodes[rot], codes[id]);
-      if(thishamming>0){ continue;} //Added for possible strictness to detection
+      if(thishamming>0){ continue;} //Added for strictness to detection
       if (thishamming < besthamming) {
         besthamming = thishamming;
         bestrotation = rot;
         bestid = id;
-	printf("---Tag ID: %zu ---\n", bestid); //print ID being detected
+	//printf("---Tag ID: %zu ---\n", bestid); //print ID being detected (Added to GulliView code)
         bestcode = codes[id];
       }
     }

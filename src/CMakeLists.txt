@@ -13,17 +13,8 @@ add_library(apriltags
 
 set(AT_LIBS apriltags ${OPENCV_LDFLAGS})
 
-add_executable(camtest camtest.cpp)
-target_link_libraries(camtest ${AT_LIBS})
-
 add_executable(GulliView GulliView.cpp)
-target_link_libraries(GulliView ${AT_LIBS})
-
-add_executable(tagtest tagtest.cpp)
-target_link_libraries(tagtest ${AT_LIBS})
-
-add_executable(quadtest quadtest.cpp)
-target_link_libraries(quadtest ${AT_LIBS})
+target_link_libraries(GulliView ${AT_LIBS}) #Add ${BOOST_LIBRARIES}
 
 if (GLUT_LIBRARY)
 
