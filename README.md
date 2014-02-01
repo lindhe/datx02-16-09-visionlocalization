@@ -1,4 +1,4 @@
-apriltags-cpp
+GulliView
 =============
 
 C++ port of the APRIL tags library, using OpenCV (and optionally, CGAL).
@@ -13,12 +13,15 @@ Sanjana Hangal <sanjana@student.chalmers.se>
 Requirements
 ============
 
-Currently, apriltags-cpp requires the following to build:
+Please be sure that you have the latest update to your Linux system
+and that all build-essentials are installed.
 
-  * OpenCV >= 2.3
-  * GLUT or freeglut (optional, used for test program)
-  * Cairo (optional, used to print tags)
-  * CGAL (optional, used for new quad detection algorithm)
+GulliView requires the following to build:
+
+  * OpenCV >= 2.3 (2.4.8 is now out and stable)
+  * GLUT or freeglut (freeglut3-dev)
+  * Cairo (libcairo2-dev)
+  * 32bit libraries (if using 64-bit machine --> la32-libs)
 
 You must have cmake installed to build the software as well.
 
@@ -27,7 +30,7 @@ Building
 
 To compile the code, 
 
-    cd /path/to/apriltags-cpp
+    cd /path/to/visionlocalization
     mkdir build
     cd build
     cmake .. -DCMAKE_BUILD_TYPE=Release
@@ -37,13 +40,9 @@ Demo/utility programs
 =====================
 
 The APRIL tags library is intended to be used as a library, from C++,
-but there are also five demo/utility programs included in this
+but there are also three demo/utility programs included in this
 distribution:
 
-   *   `tagtest` - Demonstrate tag recognition and time profiling. 
-     
-   *   `camtest` - Demonstrate 3D tag locations using OpenCV to
-       visualize, with an attached camera.
 
    *   `gltest` - Demonstrate 3D tag locations using OpenGL to
        visualize, with an attached camera.
@@ -52,6 +51,3 @@ distribution:
        a template tracking approach.
 
    *   `maketags` - Create PDF files for printing tags.
-
-There are some test images in the `images` directory, that may be
-useful to use with the `tagtest` program.
