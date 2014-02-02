@@ -26,6 +26,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
+//#include <boost/array.hpp>
+//#include <boost/asio.hpp>
+
 
 
 #include "CameraUtil.h"
@@ -33,6 +36,17 @@
 #define DEFAULT_TAG_FAMILY "Tag36h11"
 using namespace std;
 using helper::ImageSource;
+//using boost::asio::ip::udp;
+//using namespace boost::asio;
+
+double a1 = 0.0;
+double a2 = 0.0;
+double b1 = 0.0;
+double b2 = 0.0;
+double c1 = 0.0;
+double c2 = 0.0;
+
+//ip::udp::endpoint udp(boost::asio::ip::address::from_string("127.0.0.1"), 1048);
 
 typedef struct GulliViewOptions {
   GulliViewOptions() :
@@ -152,7 +166,8 @@ GulliViewOptions parse_options(int argc, char** argv) {
 int main(int argc, char** argv) {
   
   //Buffer to hold tags and coordinates
-  char* buffer = new char[100];
+  //char* buffer = new char[100];
+  
   
   GulliViewOptions opts = parse_options(argc, argv);
 
@@ -247,6 +262,7 @@ int main(int argc, char** argv) {
         cv::Point3d(-ss,  ss, sz),
       };
       
+      
       /* Possible edges of the box created. Come back to THIS*/
       int edges[nedges][2] = {
 
@@ -289,19 +305,63 @@ int main(int argc, char** argv) {
 	//Add code in order to copy and send array
         //Static buffer
         TagDetection &dd = detections[i];
-	// Print out Tag ID in center of Tag	
-        putText(frame, helper::num2str(dd.id), 
-	     cv::Point(dd.cxy.x,dd.cxy.y), 
-             CV_FONT_NORMAL, 
-             1.0, cvScalar(0,250,0), 2, CV_AA);
-	// Print out TagID and current Tag coordinates	
-	// Output added to buffer (One packet per frame)
-	std::string outPut = "Tag ID: " + helper::num2str(dd.id); 
-	//std::cout << "---TagID---: " << dd.id << "\n";
-	std::cout << outPut << "\n";
-	//Change coordinates to int, lose the extra decimal places
-	std::cout << "---Coordinates---: " << dd.cxy << "\n";
-	//Add code to add variables to buffer created
+	// Origin of axis detected
+	if (dd.id == 0) {
+		putText(frame, "0,0", 
+	     	cv::Point(dd.cxy.x,dd.cxy.y), 
+             	CV_FONT_NORMAL, 
+             	1.0, cvScalar(0,0,250), 2, CV_AA);
+		a1 = dd.cxy.x;
+		a2 = dd.cxy.y;
+	// New X-Axis detected
+	} else if (dd.id == 1) {
+		putText(frame, "X Axis", 
+	     	cv::Point(dd.cxy.x,dd.cxy.y), 
+             	CV_FONT_NORMAL, 
+             	1.0, cvScalar(0,0,250), 2, CV_AA);
+		b1 = dd.cxy.x;
+		b2 = dd.cxy.y;
+	// New Y-Axis detected
+	} else if (dd.id == 2) {
+		putText(frame, "Y Axis", 
+	     	cv::Point(dd.cxy.x,dd.cxy.y), 
+             	CV_FONT_NORMAL, 
+             	1.0, cvScalar(0,0,250), 2, CV_AA);
+		c1 = dd.cxy.x;
+		c2 = dd.cxy.y;
+	// Other ID's and coordinates detected
+	} else {
+		b1 = b1-a1;
+		b2 = b2-a2;
+		c1 = c1-a1;
+		c2 = c2-a2;
+		double det = 1/(b1*c2-c1*b2);
+		double f1 = det*c2;
+		double f2 = det*(-c1);
+		double f3 = det*(-b2);
+		double f4 = det*b1;
+		double x_new = f1*dd.cxy.x + f2*dd.cxy.y;
+		double y_new = f3*dd.cxy.x + f4*dd.cxy.y;
+
+		//double x_new = 1.2;
+		//double y_new = 1.3;
+		// Print out Tag ID in center of Tag	
+		putText(frame, helper::num2str(dd.id), 
+		     cv::Point(dd.cxy.x,dd.cxy.y), 
+		     CV_FONT_NORMAL, 
+		     1.0, cvScalar(0,250,0), 2, CV_AA);
+		// Print out TagID and current Tag coordinates	
+		// Output added to buffer (One packet per frame)
+		std::string outPut = "Tag ID: " + helper::num2str(dd.id); 
+		//std::cout << "---TagID---: " << dd.id << "\n";
+		std::cout << outPut << "\n";
+		//Change coordinates to int, lose the extra decimal places
+		std::cout << "---Coordinates X---: " << x_new << "\n";
+		std::cout << "---Coordinates Y---: " << y_new << "\n";
+		//Add code to add variables to buffer created
+	}
+	
+	//std::cout << newOrgX << "\n";
 
         //for (cvPose=0; cvPose<2; ++cvPose) {
         if (1) {
