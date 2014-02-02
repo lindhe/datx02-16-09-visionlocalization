@@ -150,15 +150,12 @@ void TagFamily::decode(TagDetection& det, TagFamily::code_t rcode) const {
         besthamming = thishamming;
         bestrotation = rot;
         bestid = id;
-	//printf("---Tag ID: %zu ---\n", bestid); //print ID being detected (Added to GulliView code)
         bestcode = codes[id];
       }
     }
   }
 
   det.id = bestid;
-  //Print here to get ID
-  //printf("---Tag ID: %zu ---\n", bestid);
   det.hammingDistance = besthamming;
   det.rotation = bestrotation;
   det.good = (det.hammingDistance <= errorRecoveryBits);
