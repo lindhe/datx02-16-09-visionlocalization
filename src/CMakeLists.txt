@@ -14,7 +14,11 @@ add_library(apriltags
 set(AT_LIBS apriltags ${OPENCV_LDFLAGS})
 
 add_executable(GulliView GulliView.cpp)
-target_link_libraries(GulliView ${AT_LIBS}) #Add ${BOOST_LIBRARIES}
+target_link_libraries(GulliView ${AT_LIBS})
+target_link_libraries(GulliView ${Boost_LIBRARIES})
+
+add_executable(GulliViewSend GulliViewSend.cpp)
+target_link_libraries(GulliViewSend ${Boost_LIBRARIES})
 
 if (GLUT_LIBRARY)
 
