@@ -21,7 +21,11 @@ GulliView requires the following to build:
   * OpenCV >= 2.3 (2.4.8 is now out and stable)
   * GLUT or freeglut (freeglut3-dev)
   * Cairo (libcairo2-dev)
+	* For creating tags (note: margins set to -10 for A4 paper)
   * 32bit libraries (if using 64-bit machine --> la32-libs)
+  * Boost version 1.49 (sudo apt-get install libboost-all-dev)
+	* Used for sending Tag IDs, coordinates and timestamp to
+	  server over UDP
 
 You must have cmake installed to build the software as well.
 
@@ -51,3 +55,17 @@ distribution:
        a template tracking approach.
 
    *   `maketags` - Create PDF files for printing tags.
+
+Running GulliView
+=================
+
+Simply clone visionlocalization from github directory 
+(git clone https://username@bitbucket.org/thpe/visionlocalization.git) 
+to a local directory of your choice. Note: Change "username" to username 
+given to you to access repository. Follow building section to build all
+executables. 
+
+* cd /path/to/visionlocalization/build
+* ./GulliViewServer (sudo if access is denied for binding process)
+* in another terminal: ./GulliView -f Tag16h5 (or tag family of your choice)
+* Start detecting and sending info to UDP server :)
