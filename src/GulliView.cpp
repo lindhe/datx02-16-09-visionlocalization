@@ -30,7 +30,12 @@
 #include <boost/asio.hpp>
 #include "boost/date_time/posix_time/posix_time.hpp"
 
-
+#include <boost/chrono/chrono.hpp>
+#include <boost/chrono/chrono_io.hpp>
+#include <boost/chrono/process_cpu_clocks.hpp>
+#include <boost/chrono/ceil.hpp>
+#include <boost/chrono/floor.hpp>
+#include <boost/chrono/round.hpp>
 
 #include "CameraUtil.h"
 
@@ -333,6 +338,7 @@ int main(int argc, char** argv) {
 		c2 = dd.cxy.y;
 	// Other ID's and coordinates detected
 	} else {
+		//boost::chrono::nanoseconds start;
 		b1 = b1-a1;
 		b2 = b2-a2;
 		c1 = c1-a1;
@@ -347,15 +353,21 @@ int main(int argc, char** argv) {
 		double x_new = f1*(dd.cxy.x-a1) + f2*(dd.cxy.y-a2);
 		double y_new = f3*(dd.cxy.x-a1) + f4*(dd.cxy.y-a2);
 
-		//double x_new = 1.2;
-		//double y_new = 1.3;
 		// Print out Tag ID in center of Tag	
 		putText(frame, helper::num2str(dd.id), 
 		     cv::Point(dd.cxy.x,dd.cxy.y), 
 		     CV_FONT_NORMAL, 
 		     1.0, cvScalar(0,250,0), 2, CV_AA);
-		// Print out TagID and current Tag coordinates	
-		// Output added to buffer (One packet per frame)
+		
+		//TODO:Processing time
+		//boost::chrono::nanoseconds end;
+		//boost::chrono::nanoseconds count;
+		//count = end - start;
+
+		// d now holds the number of milliseconds from start to end.
+
+		//std::cout<< count.count()<< "\n";
+
 		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: " 
 		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::second_clock::local_time());
 
