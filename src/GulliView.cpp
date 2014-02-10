@@ -26,8 +26,9 @@
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
-//#include <boost/array.hpp>
-//#include <boost/asio.hpp>
+#include <boost/array.hpp>
+#include <boost/asio.hpp>
+#include "boost/date_time/posix_time/posix_time.hpp"
 
 
 
@@ -36,7 +37,8 @@
 #define DEFAULT_TAG_FAMILY "Tag36h11"
 using namespace std;
 using helper::ImageSource;
-//using boost::asio::ip::udp;
+using boost::asio::ip::udp;
+using boost::posix_time::ptime;
 //using namespace boost::asio;
 
 double a1 = 0.0;
@@ -45,8 +47,6 @@ double b1 = 0.0;
 double b2 = 0.0;
 double c1 = 0.0;
 double c2 = 0.0;
-
-//ip::udp::endpoint udp(boost::asio::ip::address::from_string("127.0.0.1"), 1048);
 
 typedef struct GulliViewOptions {
   GulliViewOptions() :
@@ -167,6 +167,7 @@ int main(int argc, char** argv) {
   
   //Buffer to hold tags and coordinates
   //char* buffer = new char[100];
+
   
   
   GulliViewOptions opts = parse_options(argc, argv);
@@ -239,6 +240,7 @@ int main(int argc, char** argv) {
 
     } else  {
   
+      // Get time of frame/detection----------------
       //show = family.superimposeDetections(frame, detections); //-- Used to actually
       //superimpose tag image in video
       show = frame;
@@ -335,13 +337,15 @@ int main(int argc, char** argv) {
 		b2 = b2-a2;
 		c1 = c1-a1;
 		c2 = c2-a2;
-		double det = 1/(b1*c2-c1*b2);
+		//std::cout<<b1<<","<<b2<<" "<<c1<<","<<c2<<"\n";
+		double det = 1.0/(b1*c2-c1*b2);
+		//std::cout<<det<<"\n";
 		double f1 = det*c2;
 		double f2 = det*(-c1);
 		double f3 = det*(-b2);
 		double f4 = det*b1;
-		double x_new = f1*dd.cxy.x + f2*dd.cxy.y;
-		double y_new = f3*dd.cxy.x + f4*dd.cxy.y;
+		double x_new = f1*(dd.cxy.x-a1) + f2*(dd.cxy.y-a2);
+		double y_new = f3*(dd.cxy.x-a1) + f4*(dd.cxy.y-a2);
 
 		//double x_new = 1.2;
 		//double y_new = 1.3;
@@ -352,13 +356,26 @@ int main(int argc, char** argv) {
 		     1.0, cvScalar(0,250,0), 2, CV_AA);
 		// Print out TagID and current Tag coordinates	
 		// Output added to buffer (One packet per frame)
-		std::string outPut = "Tag ID: " + helper::num2str(dd.id); 
-		//std::cout << "---TagID---: " << dd.id << "\n";
-		std::cout << outPut << "\n";
+		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: " 
+		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::second_clock::local_time());
+
+		boost::asio::io_service io_service;
+		udp::resolver resolver(io_service);
+		udp::resolver::query query(udp::v4(), "127.0.0.1", "daytime");
+		udp::endpoint receiver_endpoint = *resolver.resolve(query);
+
+		udp::socket socket(io_service);
+		socket.open(udp::v4());
+		//std::cout<<receiver_endpoint<<"\n";
+      		socket.send_to(boost::asio::buffer(outPut),
+          	receiver_endpoint);
+		//Print out detections and full packet to be sent to server
+		//std::cout << outPut << "\n";
+		
 		//Change coordinates to int, lose the extra decimal places
-		std::cout << "---Coordinates X---: " << x_new << "\n";
-		std::cout << "---Coordinates Y---: " << y_new << "\n";
-		//Add code to add variables to buffer created
+		//std::cout << "---Coordinates X---: " << x_new << "\n";
+		//std::cout << "---Coordinates Y---: " << y_new << "\n";
+		//Get the time of full processing/timestamp for packet
 	}
 	
 	//std::cout << newOrgX << "\n";
