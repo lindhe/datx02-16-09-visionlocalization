@@ -3,12 +3,27 @@ GulliView
 
 C++ port of the APRIL tags library, using OpenCV (and optionally, CGAL).
 
+Original author: Edwin Olson <ebolson@umich.edu>
+C++ port and modifications: Matt Zucker <mzucker1@swarthmore.edu>
+
 Code has been modified for Vision Based Localization of Autonomous
 Vehicles in the Gulliver Project at Chalmers University, Sweden
 
 Modification Authors:
 Andrew Soderberg-Rivkin <sandrew@student.chalmers.se>
 Sanjana Hangal <sanjana@student.chalmers.se>
+
+Helper files and other functions have also been merged with the original
+project to help with certain functionalities:
+
+Copyright (c) 2010  Chen Feng (cforrest (at) umich.edu)
+
+	This program is free software; you can redistribute it and/or modify
+	it under the terms of the GNU General Public License as published by
+	the Free Software Foundation; either version 2 of the License, or
+	(at your option) any later version.
+
+More information can be found at: https://code.google.com/p/cv2cg/
 
 Requirements
 ============
