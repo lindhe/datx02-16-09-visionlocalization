@@ -17,8 +17,13 @@ add_executable(GulliView GulliView.cpp)
 target_link_libraries(GulliView ${AT_LIBS})
 target_link_libraries(GulliView ${Boost_LIBRARIES})
 
-add_executable(GulliViewSend GulliViewSend.cpp)
-target_link_libraries(GulliViewSend ${Boost_LIBRARIES})
+# -- Client used for testing for UDP transfer. Not needed
+# for final program ---
+#add_executable(GulliViewClient GulliViewClient.cpp)
+#target_link_libraries(GulliViewClient ${Boost_LIBRARIES})
+
+add_executable(GulliViewServer GulliViewServer.cpp)
+target_link_libraries(GulliViewServer ${Boost_LIBRARIES})
 
 if (GLUT_LIBRARY)
 
