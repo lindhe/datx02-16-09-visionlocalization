@@ -229,6 +229,7 @@ int main(int argc, char** argv) {
   while (1) {
 
     vc >> frame;
+    // Start timestamp (Store)
     if (frame.empty()) { break; }
     
     detector.process(frame, opticalCenter, detections);
@@ -368,7 +369,7 @@ int main(int argc, char** argv) {
 		// d now holds the number of milliseconds from start to end.
 
 		//std::cout<< count.count()<< "\n";
-
+	        //End timestamp (Processing)
 		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: " 
 		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + 
 		helper::num2str(boost::posix_time::second_clock::local_time());
