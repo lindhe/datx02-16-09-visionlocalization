@@ -97,6 +97,7 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
  -M              Toggle display mirroring\n",
           tool_name,
 	  /* Options removed that are not needed */
+	  /* Can be added later for further functionality */
           //p.sigma,
           //p.segSigma,
           //p.thetaThresh,
@@ -183,8 +184,8 @@ int main(int argc, char** argv) {
     family.setErrorRecoveryFraction(opts.error_fraction);
   }
 
-  std::cout << "family.minimumHammingDistance = " << family.minimumHammingDistance << "\n";
-  std::cout << "family.errorRecoveryBits = " << family.errorRecoveryBits << "\n";
+  //std::cout << "family.minimumHammingDistance = " << family.minimumHammingDistance << "\n";
+  //std::cout << "family.errorRecoveryBits = " << family.errorRecoveryBits << "\n";
   
 
   cv::VideoCapture vc;
@@ -369,7 +370,8 @@ int main(int argc, char** argv) {
 		//std::cout<< count.count()<< "\n";
 
 		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: " 
-		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::second_clock::local_time());
+		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + 
+		helper::num2str(boost::posix_time::second_clock::local_time());
 
 		boost::asio::io_service io_service;
 		udp::resolver resolver(io_service);
