@@ -356,7 +356,7 @@ int main(int argc, char** argv) {
 
    for (size_t i=0; i<detections.size(); ++i) {
       TagDetection &dd = detections[i];
-      if (dd.id != 0 and dd.id != 1 and dd.id != 2) {
+      if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3) {
 		//boost::chrono::nanoseconds start;
 		double x_new = f1*(dd.cxy.x-a1) + f2*(dd.cxy.y-a2);
 		double y_new = f3*(dd.cxy.x-a1) + f4*(dd.cxy.y-a2);
