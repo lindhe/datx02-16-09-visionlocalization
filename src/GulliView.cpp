@@ -311,47 +311,53 @@ int main(int argc, char** argv) {
       cv::Mat_<double>      distCoeffs = cv::Mat_<double>::zeros(4,1);
 
       for (size_t i=0; i<detections.size(); ++i) {
-	//Add code in order to copy and send array
-        //Static buffer
-        TagDetection &dd = detections[i];
-	// Origin of axis detected
-	if (dd.id == 0) {
-		putText(frame, "0,0",
-	     	cv::Point(dd.cxy.x,dd.cxy.y),
-             	CV_FONT_NORMAL,
-             	1.0, cvScalar(0,0,250), 2, CV_AA);
-		a1 = dd.cxy.x;
-		a2 = dd.cxy.y;
-	// New X-Axis detected
-	} else if (dd.id == 1) {
-		putText(frame, "X Axis",
-	     	cv::Point(dd.cxy.x,dd.cxy.y),
-             	CV_FONT_NORMAL,
-             	1.0, cvScalar(0,0,250), 2, CV_AA);
-		b1 = dd.cxy.x;
-		b2 = dd.cxy.y;
-		b1 = b1-a1;
-		b2 = b2-a2;
-	// New Y-Axis detected
-	} else if (dd.id == 2) {
-		putText(frame, "Y Axis",
-	     	cv::Point(dd.cxy.x,dd.cxy.y),
-             	CV_FONT_NORMAL,
-             	1.0, cvScalar(0,0,250), 2, CV_AA);
-		c1 = dd.cxy.x;
-		c2 = dd.cxy.y;
-		c1 = c1-a1;
-		c2 = c2-a2;
-	// Other ID's and coordinates detected
-	} else {
-		//boost::chrono::nanoseconds start;
+         //Add code in order to copy and send array
+         //Static buffer
+         TagDetection &dd = detections[i];
+         // Origin of axis detected
+         if (dd.id == 0) {
+            putText(frame, "0,0",
+                  cv::Point(dd.cxy.x,dd.cxy.y),
+                  CV_FONT_NORMAL,
+                  1.0, cvScalar(0,0,250), 2, CV_AA);
+            a1 = dd.cxy.x;
+            a2 = dd.cxy.y;
+            // New X-Axis detected
+         } else if (dd.id == 1) {
+            putText(frame, "X Axis",
+                  cv::Point(dd.cxy.x,dd.cxy.y),
+                  CV_FONT_NORMAL,
+                  1.0, cvScalar(0,0,250), 2, CV_AA);
+            b1 = dd.cxy.x;
+            b2 = dd.cxy.y;
+            b1 = b1-a1;
+            b2 = b2-a2;
+            // New Y-Axis detected
+         } else if (dd.id == 2) {
+            putText(frame, "Y Axis",
+                  cv::Point(dd.cxy.x,dd.cxy.y),
+                  CV_FONT_NORMAL,
+                  1.0, cvScalar(0,0,250), 2, CV_AA);
+            c1 = dd.cxy.x;
+            c2 = dd.cxy.y;
+            c1 = c1-a1;
+            c2 = c2-a2;
+            // Other ID's and coordinates detected
+         }
+      }
+
 		//std::cout<<dd.id<<" after  "<<b1<<","<<b2<<" "<<c1<<","<<c2<<"\n";
 		double det = 1.0/(b1*c2-c1*b2);
-		std::cout<<"1/det "<<det<<"\n";
+		//std::cout<<"1/det "<<det<<"\n";
 		double f1 = det*c2;
 		double f2 = det*(-c1);
 		double f3 = det*(-b2);
 		double f4 = det*b1;
+
+   for (size_t i=0; i<detections.size(); ++i) {
+      TagDetection &dd = detections[i];
+      if (dd.id != 0 and dd.id != 1 and dd.id != 2) {
+		//boost::chrono::nanoseconds start;
 		double x_new = f1*(dd.cxy.x-a1) + f2*(dd.cxy.y-a2);
 		double y_new = f3*(dd.cxy.x-a1) + f4*(dd.cxy.y-a2);
 
