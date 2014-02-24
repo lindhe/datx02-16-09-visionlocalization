@@ -355,12 +355,12 @@ int main(int argc, char** argv) {
 		double x_new = f1*(dd.cxy.x-a1) + f2*(dd.cxy.y-a2);
 		double y_new = f3*(dd.cxy.x-a1) + f4*(dd.cxy.y-a2);
 
-		// Print out Tag ID in center of Tag	
-		putText(frame, helper::num2str(dd.id), 
-		     cv::Point(dd.cxy.x,dd.cxy.y), 
-		     CV_FONT_NORMAL, 
+		// Print out Tag ID in center of Tag
+		putText(frame, helper::num2str(dd.id),
+		     cv::Point(dd.cxy.x,dd.cxy.y),
+		     CV_FONT_NORMAL,
 		     1.0, cvScalar(0,250,0), 2, CV_AA);
-		
+
 		//TODO:Processing time
 		//boost::chrono::nanoseconds end;
 		//boost::chrono::nanoseconds count;
@@ -386,7 +386,7 @@ int main(int argc, char** argv) {
           	receiver_endpoint);
 		//Print out detections and full packet to be sent to server
 		//std::cout << outPut << "\n";
-		
+
 		//Change coordinates to int, lose the extra decimal places
 		//std::cout << "---Coordinates X---: " << x_new << "\n";
 		//std::cout << "---Coordinates Y---: " << y_new << "\n";
