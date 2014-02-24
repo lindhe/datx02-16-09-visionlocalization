@@ -7,7 +7,7 @@
  * ----------------------- Modified ---------------------------------e
  * Code modified for project in Vision Based Localization for
  * Autonomous Vehicles at Chalmers University, Goteborg, Sweden
- * Modification Authors: 
+ * Modification Authors:
  * Andrew Soderberg-Rivkin <sandrew@student.chalmers.se>
  * Sanjana Hangal <sanjana@student.chalmers.se>
  ********************************************************************/
@@ -117,7 +117,7 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
     fprintf(output, " %s", known[i].c_str());
   }
   fprintf(output, "\n");
-  /* Old Options removed can be re-added if they are needed. Default values set for now: 
+  /* Old Options removed can be re-added if they are needed. Default values set for now:
    * -D              Use decimation for segmentation stage.\n\
    * -S SIGMA        Set the original image sigma value (default %.2f).\n\
    * -s SEGSIGMA     Set the segmentation sigma value (default %.2f).\n\
@@ -170,12 +170,12 @@ GulliViewOptions parse_options(int argc, char** argv) {
 }
 
 int main(int argc, char** argv) {
-  
+
   //Buffer to hold tags and coordinates
   //char* buffer = new char[100];
 
-  
-  
+
+
   GulliViewOptions opts = parse_options(argc, argv);
 
   TagFamily family(opts.family_str);
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
 
   //std::cout << "family.minimumHammingDistance = " << family.minimumHammingDistance << "\n";
   //std::cout << "family.errorRecoveryBits = " << family.errorRecoveryBits << "\n";
-  
+
 
   cv::VideoCapture vc;
   vc.open(opts.device_num);
@@ -196,7 +196,7 @@ int main(int argc, char** argv) {
     // Use uvcdynctrl to figure this out dynamically at some point?
     vc.set(CV_CAP_PROP_FRAME_WIDTH, opts.frame_width);
     vc.set(CV_CAP_PROP_FRAME_HEIGHT, opts.frame_height);
-    
+
 
   }
 
@@ -212,7 +212,7 @@ int main(int argc, char** argv) {
     std::cerr << "no frames!\n";
     exit(1);
   }
-  
+
   /* Optical Center of video capturing frame with X and Y coordinates */
   opticalCenter.x = frame.cols * 0.5;
   opticalCenter.y = frame.rows * 0.5;
@@ -221,32 +221,32 @@ int main(int argc, char** argv) {
 
   TagDetectorParams& params = opts.params;
   TagDetector detector(family, params);
-  
+
   TagDetectionArray detections;
 
   int cvPose = 0;
-  
+
   while (1) {
 
     vc >> frame;
     // Start timestamp (Store)
     if (frame.empty()) { break; }
-    
+
     detector.process(frame, opticalCenter, detections);
-    
+
 
     cv::Mat show;
     if (detections.empty()) {
 
       show = frame;
       string idToText = "---Nothing Detected---";
-        putText(frame, idToText, 
-	     cvPoint(30,30), 
-             cv::FONT_HERSHEY_PLAIN, 
+        putText(frame, idToText,
+	     cvPoint(30,30),
+             cv::FONT_HERSHEY_PLAIN,
              1.5, cvScalar(180,250,0), 1, CV_AA);
 
     } else  {
-  
+
       // Get time of frame/detection----------------
       //show = family.superimposeDetections(frame, detections); //-- Used to actually
       //superimpose tag image in video
@@ -270,8 +270,8 @@ int main(int argc, char** argv) {
         cv::Point3d( ss,  ss, sz),
         cv::Point3d(-ss,  ss, sz),
       };
-      
-      
+
+
       /* Possible edges of the box created. Come back to THIS*/
       int edges[nedges][2] = {
 
@@ -285,12 +285,12 @@ int main(int argc, char** argv) {
         { 5, 6 },
         { 6, 7 },
         { 7, 4 },
-        
+
         { 0, 4 },
         { 1, 5 },
         { 2, 6 },
         { 3, 7 }
-        
+
       };
 
       cv::Point2d dst[npoints];
@@ -316,25 +316,25 @@ int main(int argc, char** argv) {
         TagDetection &dd = detections[i];
 	// Origin of axis detected
 	if (dd.id == 0) {
-		putText(frame, "0,0", 
-	     	cv::Point(dd.cxy.x,dd.cxy.y), 
-             	CV_FONT_NORMAL, 
+		putText(frame, "0,0",
+	     	cv::Point(dd.cxy.x,dd.cxy.y),
+             	CV_FONT_NORMAL,
              	1.0, cvScalar(0,0,250), 2, CV_AA);
 		a1 = dd.cxy.x;
 		a2 = dd.cxy.y;
 	// New X-Axis detected
 	} else if (dd.id == 1) {
-		putText(frame, "X Axis", 
-	     	cv::Point(dd.cxy.x,dd.cxy.y), 
-             	CV_FONT_NORMAL, 
+		putText(frame, "X Axis",
+	     	cv::Point(dd.cxy.x,dd.cxy.y),
+             	CV_FONT_NORMAL,
              	1.0, cvScalar(0,0,250), 2, CV_AA);
 		b1 = dd.cxy.x;
 		b2 = dd.cxy.y;
 	// New Y-Axis detected
 	} else if (dd.id == 2) {
-		putText(frame, "Y Axis", 
-	     	cv::Point(dd.cxy.x,dd.cxy.y), 
-             	CV_FONT_NORMAL, 
+		putText(frame, "Y Axis",
+	     	cv::Point(dd.cxy.x,dd.cxy.y),
+             	CV_FONT_NORMAL,
              	1.0, cvScalar(0,0,250), 2, CV_AA);
 		c1 = dd.cxy.x;
 		c2 = dd.cxy.y;
@@ -370,8 +370,8 @@ int main(int argc, char** argv) {
 
 		//std::cout<< count.count()<< "\n";
 	        //End timestamp (Processing)
-		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: " 
-		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + 
+		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
+		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " +
 		helper::num2str(boost::posix_time::second_clock::local_time());
 
 		boost::asio::io_service io_service;
@@ -392,7 +392,7 @@ int main(int argc, char** argv) {
 		//std::cout << "---Coordinates Y---: " << y_new << "\n";
 		//Get the time of full processing/timestamp for packet
 	}
-	
+
 	//std::cout << newOrgX << "\n";
 
         //for (cvPose=0; cvPose<2; ++cvPose) {
@@ -403,19 +403,19 @@ int main(int argc, char** argv) {
           if (cvPose) {
 
 
-            CameraUtil::homographyToPoseCV(f, f, s, 
+            CameraUtil::homographyToPoseCV(f, f, s,
                                            detections[i].homography,
                                            r, t);
 
           } else {
 
-            cv::Mat_<double> M = 
-              CameraUtil::homographyToPose(f, f, s, 
+            cv::Mat_<double> M =
+              CameraUtil::homographyToPose(f, f, s,
                                            detections[i].homography,
                                            false);
 
             cv::Mat_<double> R = M.rowRange(0,3).colRange(0, 3);
-          
+
             t = M.rowRange(0,3).col(3);
 
             cv::Rodrigues(R, r);
@@ -426,18 +426,18 @@ int main(int argc, char** argv) {
 
 	  /* Used to draw lines on video image */
           for (int j=0; j<nedges; ++j) {
-            cv::line(show, 
+            cv::line(show,
                      dstmat(edges[j][0],0),
                      dstmat(edges[j][1],0),
                      cvPose ? CV_RGB(0,0,255) : CV_RGB(255,0,0),
                      1, CV_AA);
-	    
+
           }
 
         }
 
       }
-                                                          
+
 
     }
 
@@ -456,7 +456,7 @@ int main(int argc, char** argv) {
       break;
     }
 
-  }    
+  }
   /* Report times of position? */
   detector.reportTimers();
 
