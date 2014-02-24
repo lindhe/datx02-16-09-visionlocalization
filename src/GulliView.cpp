@@ -330,6 +330,8 @@ int main(int argc, char** argv) {
              	1.0, cvScalar(0,0,250), 2, CV_AA);
 		b1 = dd.cxy.x;
 		b2 = dd.cxy.y;
+		b1 = b1-a1;
+		b2 = b2-a2;
 	// New Y-Axis detected
 	} else if (dd.id == 2) {
 		putText(frame, "Y Axis",
@@ -338,16 +340,14 @@ int main(int argc, char** argv) {
              	1.0, cvScalar(0,0,250), 2, CV_AA);
 		c1 = dd.cxy.x;
 		c2 = dd.cxy.y;
+		c1 = c1-a1;
+		c2 = c2-a2;
 	// Other ID's and coordinates detected
 	} else {
 		//boost::chrono::nanoseconds start;
-		b1 = b1-a1;
-		b2 = b2-a2;
-		c1 = c1-a1;
-		c2 = c2-a2;
-		//std::cout<<b1<<","<<b2<<" "<<c1<<","<<c2<<"\n";
+		//std::cout<<dd.id<<" after  "<<b1<<","<<b2<<" "<<c1<<","<<c2<<"\n";
 		double det = 1.0/(b1*c2-c1*b2);
-		//std::cout<<det<<"\n";
+		std::cout<<"1/det "<<det<<"\n";
 		double f1 = det*c2;
 		double f2 = det*(-c1);
 		double f3 = det*(-b2);
@@ -385,7 +385,7 @@ int main(int argc, char** argv) {
       		socket.send_to(boost::asio::buffer(outPut),
           	receiver_endpoint);
 		//Print out detections and full packet to be sent to server
-		//std::cout << outPut << "\n";
+		std::cout << outPut << "\n";
 
 		//Change coordinates to int, lose the extra decimal places
 		//std::cout << "---Coordinates X---: " << x_new << "\n";
