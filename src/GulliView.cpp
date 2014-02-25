@@ -375,8 +375,8 @@ int main(int argc, char** argv) {
                   1.0, cvScalar(0,0,250), 2, CV_AA);
             b1 = dd.cxy.x;
             b2 = dd.cxy.y;
-            b1 = b1-a1;
-            b2 = b2-a2;
+//            b1 = b1-a1;
+//            b2 = b2-a2;
             // New Y-Axis detected
          } else if (dd.id == 2) {
             putText(frame, "Y Axis",
@@ -385,8 +385,8 @@ int main(int argc, char** argv) {
                   1.0, cvScalar(0,0,250), 2, CV_AA);
             c1 = dd.cxy.x;
             c2 = dd.cxy.y;
-            c1 = c1-a1;
-            c2 = c2-a2;
+//            c1 = c1-a1;
+//            c2 = c2-a2;
             // Quad Angle used for perspective transform
          } else if (dd.id == 3) {
             putText(frame, "Quad Axis",
@@ -395,8 +395,8 @@ int main(int argc, char** argv) {
                   1.0, cvScalar(0,0,250), 2, CV_AA);
             d1 = dd.cxy.x;
             d2 = dd.cxy.y;
-            d1 = d1-a1;
-            d2 = d2-a2;
+//            d1 = d1-a1;
+//            d2 = d2-a2;
          }
       }
 
@@ -406,48 +406,54 @@ int main(int argc, char** argv) {
 
 		//cv::imshow( "Display window" , edited );
 	// Other ID's and coordinates detected
-		double det = 1.0/(b1*c2-c1*b2);
+		//double det = 1.0/(b1*c2-c1*b2);
 		//std::cout<<"1/det "<<det<<"\n";
-		double f1 = det*c2;
-		double f2 = det*(-c1);
-		double f3 = det*(-b2);
-		double f4 = det*b1;
+		//double f1 = det*c2;
+		//double f2 = det*(-c1);
+		//double f3 = det*(-b2);
+		//double f4 = det*b1;
+
+		at::Point source_points[4];
+		at::Point dest_points[4];
+
+
+		source_points[0] = at::Point(a1, a2);
+		source_points[1] = at::Point(b1, b2);
+		source_points[2] = at::Point(d1, d2);
+		source_points[3] = at::Point(c1, c2);
+
+		//std::cout << "One: " << one << "\n";
+
+		dest_points[0] =  at::Point(0.0, 0.0);
+		dest_points[1] =  at::Point(1.0, 0.0);
+		dest_points[2] =  at::Point(1.0, 1.0);
+		dest_points[3] =  at::Point(0.0, 1.0);
+
+		pts = getPerspectiveTransform(source_points, dest_points);
+		//std::cout<<"PTS: " << pts << "\n";
+
+      std::vector<at::Point>  prevDetections(detections.size());
+      for (size_t i=0; i<detections.size(); ++i) {
+         TagDetection &dd = detections[i];
+         prevDetections[i] = at::Point(dd.cxy.x, dd.cxy.y);
+      }
+      std::vector<at::Point>  newDetections(detections.size());
+		perspectiveTransform(prevDetections, newDetections, pts);
 
    for (size_t i=0; i<detections.size(); ++i) {
       TagDetection &dd = detections[i];
       if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3) {
 		//boost::chrono::nanoseconds start;
+
+		double x_new = newDetections[i].x;
+		double y_new = newDetections[i].y;
+
+#if 0
 		double x_new = f1*(dd.cxy.x-a1) + f2*(dd.cxy.y-a2);
 		double y_new = f3*(dd.cxy.x-a1) + f4*(dd.cxy.y-a2);
+#endif
 
 		//-------- Start of Perspcetive Transform TODO-------//
-		//at::Point one = at::Point(0.0, 0.0);
-		//at::Point two = at::Point(640.0, 0.0);
-		//at::Point three = at::Point(640.0, 480.0);
-		//at::Point four = at::Point(0.0, 480.0);
-
-		//at::Point five = at::Point(a1, a2);
-		//at::Point six = at::Point(b1, b2);
-		//at::Point seven = at::Point(d1, d2);
-		//at::Point eight = at::Point(c1, c2);
-
-		//at::Point source_points[4];
-		//at::Point dest_points[4];
-
-		//source_points[0] = one;
-		//source_points[1] = two;
-		//source_points[2] = three;
-		//source_points[3] = four;
-
-		//std::cout << "One: " << one << "\n";
-
-		//dest_points[0] = five;
-		//dest_points[1] = six;
-		//dest_points[2] = seven;
-		//dest_points[3] = eight;
-
-		//pts = getPerspectiveTransform(source_points, dest_points);
-		//std::cout<<"PTS: " << pts << "\n";
 
 		//cv::Mat dst;
 		//cv::warpPerspective(frame, dst, pts, cv::Size(640, 480));
@@ -503,7 +509,7 @@ int main(int argc, char** argv) {
 		//socket.send_to(boost::asio::buffer(startTime),
           	//receiver_endpoint);
 		//Print out detections and full packet to be sent to server
-		std::cout << outPut << "\n";
+		//std::cout << outPut << "\n";
 
 		//Change coordinates to int, lose the extra decimal places
 		//std::cout << "---Coordinates X---: " << x_new << "\n";
