@@ -44,6 +44,7 @@ using namespace std;
 using helper::ImageSource;
 using boost::asio::ip::udp;
 using boost::posix_time::ptime;
+using boost::posix_time::time_duration;
 //using namespace boost::asio;
 
 double a1 = 0.0;
@@ -52,13 +53,17 @@ double b1 = 0.0;
 double b2 = 0.0;
 double c1 = 0.0;
 double c2 = 0.0;
+double d1 = 0.0;
+double d2 = 0.0;
+
+at::Mat pts;
 
 typedef struct GulliViewOptions {
   GulliViewOptions() :
       params(),
       family_str(DEFAULT_TAG_FAMILY),
       error_fraction(1),
-      device_num(0),
+      device_num(1),
       focal_length(500),
       tag_size(0.1905),
       frame_width(0),
@@ -168,6 +173,39 @@ GulliViewOptions parse_options(int argc, char** argv) {
   opts.params.adaptiveThresholdRadius += (opts.params.adaptiveThresholdRadius+1) % 2;
   return opts;
 }
+cv::Mat OpenWarpPerspective(const cv::Mat& _image
+	  , const cv::Point& _lu
+	  , const cv::Point& _ru
+	  , const cv::Point& _rd
+	  , const cv::Point& _ld
+	  , const cv::Point& _lu_result
+	  , const cv::Point& _ru_result
+	  , const cv::Point& _rd_result
+	  , const cv::Point& _ld_result
+	  , cv::Mat& _transform_matrix)
+	{
+	  // todo do some checks on input.
+
+	  cv::Point2f source_points[4];
+	  cv::Point2f dest_points[4];
+
+
+	  source_points[0] = _lu;
+	  source_points[1] = _ru;
+	  source_points[2] = _rd;
+	  source_points[3] = _ld;
+
+	  dest_points[0] = _lu_result;
+	  dest_points[1] = _ru_result;
+	  dest_points[2] = _rd_result;
+	  dest_points[3] = _ld_result;
+
+	  cv::Mat dst;
+	  _transform_matrix = cv::getPerspectiveTransform(source_points, dest_points);
+	  cv::warpPerspective(_image, dst, _transform_matrix, cv::Size(CV_CAP_PROP_FRAME_WIDTH, CV_CAP_PROP_FRAME_HEIGHT));
+
+	  return dst;
+}
 
 int main(int argc, char** argv) {
 
@@ -223,13 +261,20 @@ int main(int argc, char** argv) {
   TagDetector detector(family, params);
 
   TagDetectionArray detections;
+  TagDetectionArray source_points;
+  TagDetectionArray dest_points;
+  TagDetectionArray dst;
+  TagDetectionArray newDetections;
 
   int cvPose = 0;
 
   while (1) {
 
     vc >> frame;
-    // Start timestamp (Store)
+    ptime start;
+    start = boost::posix_time::microsec_clock::local_time();
+    //std::cout << "Start Time " << start << "\n";
+    //std::string startProcStr = helper::num2str(boost::posix_time::microsec_clock::local_time());
     if (frame.empty()) { break; }
 
     detector.process(frame, opticalCenter, detections);
@@ -342,11 +387,25 @@ int main(int argc, char** argv) {
             c2 = dd.cxy.y;
             c1 = c1-a1;
             c2 = c2-a2;
-            // Other ID's and coordinates detected
+            // Quad Angle used for perspective transform
+         } else if (dd.id == 3) {
+            putText(frame, "Quad Axis",
+                  cv::Point(dd.cxy.x,dd.cxy.y),
+                  CV_FONT_NORMAL,
+                  1.0, cvScalar(0,0,250), 2, CV_AA);
+            d1 = dd.cxy.x;
+            d2 = dd.cxy.y;
+            d1 = d1-a1;
+            d2 = d2-a2;
          }
       }
 
-		//std::cout<<dd.id<<" after  "<<b1<<","<<b2<<" "<<c1<<","<<c2<<"\n";
+		//cv::Mat edited;
+		//cv::Mat dist;
+		//cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
+
+		//cv::imshow( "Display window" , edited );
+	// Other ID's and coordinates detected
 		double det = 1.0/(b1*c2-c1*b2);
 		//std::cout<<"1/det "<<det<<"\n";
 		double f1 = det*c2;
@@ -361,11 +420,51 @@ int main(int argc, char** argv) {
 		double x_new = f1*(dd.cxy.x-a1) + f2*(dd.cxy.y-a2);
 		double y_new = f3*(dd.cxy.x-a1) + f4*(dd.cxy.y-a2);
 
+		//-------- Start of Perspcetive Transform TODO-------//
+		//at::Point one = at::Point(0.0, 0.0);
+		//at::Point two = at::Point(640.0, 0.0);
+		//at::Point three = at::Point(640.0, 480.0);
+		//at::Point four = at::Point(0.0, 480.0);
+
+		//at::Point five = at::Point(a1, a2);
+		//at::Point six = at::Point(b1, b2);
+		//at::Point seven = at::Point(d1, d2);
+		//at::Point eight = at::Point(c1, c2);
+
+		//at::Point source_points[4];
+		//at::Point dest_points[4];
+
+		//source_points[0] = one;
+		//source_points[1] = two;
+		//source_points[2] = three;
+		//source_points[3] = four;
+
+		//std::cout << "One: " << one << "\n";
+
+		//dest_points[0] = five;
+		//dest_points[1] = six;
+		//dest_points[2] = seven;
+		//dest_points[3] = eight;
+
+		//pts = getPerspectiveTransform(source_points, dest_points);
+		//std::cout<<"PTS: " << pts << "\n";
+
+		//cv::Mat dst;
+		//cv::warpPerspective(frame, dst, pts, cv::Size(640, 480));
+		//---perspectiveTransform(detections, newDetections, pts);
+		//dist = OpenWarpPerspective(frame,one,two,three,four,five,six,seven,eight,edited);
+		//std::cout << "EDITED: " << edited << "\n";
+		//TagDetection &ddn = newDetections[i];
+		//std::cout << "New Coordinates X?: " << ddn.cxy.x  << "\n";
+		//-----------------End Perspective Transform TODO----------//
+
 		// Print out Tag ID in center of Tag
 		putText(frame, helper::num2str(dd.id),
 		     cv::Point(dd.cxy.x,dd.cxy.y),
 		     CV_FONT_NORMAL,
 		     1.0, cvScalar(0,250,0), 2, CV_AA);
+
+
 
 		//TODO:Processing time
 		//boost::chrono::nanoseconds end;
@@ -376,10 +475,21 @@ int main(int argc, char** argv) {
 
 		//std::cout<< count.count()<< "\n";
 	        //End timestamp (Processing)
+		//std::string endProcStr = helper::num2str(boost::posix_time::microsec_clock::local_time());
+		//std::string totProcStr = endProcStr-startProcStr;
+		//std::cout <<"Processing time: " << totProcStr << "\n";
+		ptime end;
+		end = boost::posix_time::microsec_clock::local_time();
+		//std::cout << "End Time " << end << "\n";
+		time_duration processTime = end-start;
+		//difftime(end,start);
+		std::string procTim = helper::num2str(processTime);
+		//std::cout << "Elapsed Time: " << procTim << "\n";
 		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
-		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " +
-		helper::num2str(boost::posix_time::second_clock::local_time());
+		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::microsec_clock::local_time()) + " [" +  helper::num2str(start) + "]";
 
+		//std::cout<<"Output: " << outPut <<"\n";
+		//std::string startTime =;
 		boost::asio::io_service io_service;
 		udp::resolver resolver(io_service);
 		udp::resolver::query query(udp::v4(), "127.0.0.1", "daytime");
@@ -390,6 +500,8 @@ int main(int argc, char** argv) {
 		//std::cout<<receiver_endpoint<<"\n";
       		socket.send_to(boost::asio::buffer(outPut),
           	receiver_endpoint);
+		//socket.send_to(boost::asio::buffer(startTime),
+          	//receiver_endpoint);
 		//Print out detections and full packet to be sent to server
 		std::cout << outPut << "\n";
 

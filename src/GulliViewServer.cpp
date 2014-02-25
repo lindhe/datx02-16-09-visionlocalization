@@ -8,24 +8,27 @@
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)
 //
 #include "OpenCVHelper.h"
+#include "TagDetector.h"
+
+#include <sys/time.h>
 
 #include <ctime>
 #include <iostream>
 #include <string>
 #include <boost/array.hpp>
 #include <boost/asio.hpp>
+#include <boost/lexical_cast.hpp>
 #include <fstream>
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include "CameraUtil.h"
+
+
+using namespace std;
+using helper::ImageSource;
 using boost::asio::ip::udp;
-
-std::string make_daytime_string()
-{
-  using namespace std; // For time_t, time and ctime;
-  time_t now = time(0);
-  return ctime(&now);
-}
-
+using boost::posix_time::ptime;
+using boost::posix_time::time_duration;
 int main()
 {
   // Create logfile to be used
@@ -43,9 +46,25 @@ int main()
       //boost::system::error_code error;
       socket.receive_from(
         boost::asio::buffer(recv_buf), remote_endpoint);
+      ptime recvTime;
+      recvTime = boost::posix_time::microsec_clock::local_time();
+      //std::cout<< recvTime << "\n";
+      std::string data(recv_buf.begin(), recv_buf.end());
+      //std::cout << "Data: " << data << "\n";
+      unsigned firstDel = data.find('[');
+      unsigned lastDel = data.find(']');
+      string strNew = data.substr (firstDel+1,(lastDel-firstDel)-1);
+      //std::cout << strNew << "\n";
+      ptime startProcTime;
+      startProcTime = boost::lexical_cast<ptime>(strNew);
+      //std::cout << startProcTime << "\n";
+      time_duration fullProcessTime = recvTime - startProcTime;
+      //std::cout << "Full Proc Time: " <<fullProcessTime << "\n";
+      // Time Stamp --- Received
       //std::cout << recv_buf.data() << "\n";
       // Write to logfile and save
       fout << recv_buf.data() << "" << std::endl;
+      
       
     }
   }
