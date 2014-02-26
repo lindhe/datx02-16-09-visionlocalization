@@ -55,8 +55,8 @@ endif (APPLE)
 set(CMAKE_C_FLAGS_DEBUG "-O")
 set(CMAKE_CXX_FLAGS_DEBUG "-O")
 
-set(CMAKE_C_FLAGS_RELEASE "-O2")
-set(CMAKE_CXX_FLAGS_RELEASE "-O2")
+set(CMAKE_C_FLAGS_RELEASE "-Ofast -march=native -funroll-loops -DNDEBUG")
+set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -funroll-loops -DNDEBUG")
 
 add_subdirectory(src)
 
