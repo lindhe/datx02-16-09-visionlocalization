@@ -209,414 +209,415 @@ cv::Mat OpenWarpPerspective(const cv::Mat& _image
 
 int main(int argc, char** argv) {
 
-  //Buffer to hold tags and coordinates
-  //char* buffer = new char[100];
+   //Buffer to hold tags and coordinates
+   //char* buffer = new char[100];
 
 
 
-  GulliViewOptions opts = parse_options(argc, argv);
+   GulliViewOptions opts = parse_options(argc, argv);
 
-  TagFamily family(opts.family_str);
+   TagFamily family(opts.family_str);
 
-  if (opts.error_fraction >= 0 && opts.error_fraction <= 1) {
-    family.setErrorRecoveryFraction(opts.error_fraction);
-  }
+   if (opts.error_fraction >= 0 && opts.error_fraction <= 1) {
+      family.setErrorRecoveryFraction(opts.error_fraction);
+   }
 
-  //std::cout << "family.minimumHammingDistance = " << family.minimumHammingDistance << "\n";
-  //std::cout << "family.errorRecoveryBits = " << family.errorRecoveryBits << "\n";
-
-
-  cv::VideoCapture vc;
-  vc.open(opts.device_num);
-
-  if (opts.frame_width && opts.frame_height) {
-
-    // Use uvcdynctrl to figure this out dynamically at some point?
-    vc.set(CV_CAP_PROP_FRAME_WIDTH, opts.frame_width);
-    vc.set(CV_CAP_PROP_FRAME_HEIGHT, opts.frame_height);
+   //std::cout << "family.minimumHammingDistance = " << family.minimumHammingDistance << "\n";
+   //std::cout << "family.errorRecoveryBits = " << family.errorRecoveryBits << "\n";
 
 
-  }
+   cv::VideoCapture vc;
+   vc.open(opts.device_num);
 
-  std::cout << "Set camera to resolution: "
-            << vc.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
-            << vc.get(CV_CAP_PROP_FRAME_HEIGHT) << "\n";
+   if (opts.frame_width && opts.frame_height) {
 
-  cv::Mat frame;
-  cv::Point2d opticalCenter;
-
-  vc >> frame;
-  if (frame.empty()) {
-    std::cerr << "no frames!\n";
-    exit(1);
-  }
-
-  /* Optical Center of video capturing frame with X and Y coordinates */
-  opticalCenter.x = frame.cols * 0.5;
-  opticalCenter.y = frame.rows * 0.5;
-
-  std::string win = "GulliViewer";
-
-  TagDetectorParams& params = opts.params;
-  TagDetector detector(family, params);
-
-  TagDetectionArray detections;
-  TagDetectionArray source_points;
-  TagDetectionArray dest_points;
-  TagDetectionArray dst;
-  TagDetectionArray newDetections;
-
-  int cvPose = 0;
-  boost::asio::io_service io_service;
-  udp::resolver resolver(io_service);
-  udp::resolver::query query(udp::v4(), "127.0.0.1", "daytime");
-  udp::endpoint receiver_endpoint = *resolver.resolve(query);
-
-  udp::socket socket(io_service);
-  socket.open(udp::v4());
-
-  uint32_t seq = 0;
-  while (1) {
-
-    vc >> frame;
-    ptime start;
-    start = boost::posix_time::microsec_clock::local_time();
-    //std::cout << "Start Time " << start << "\n";
-    //std::string startProcStr = helper::num2str(boost::posix_time::microsec_clock::local_time());
-    if (frame.empty()) { break; }
-
-    detector.process(frame, opticalCenter, detections);
+      // Use uvcdynctrl to figure this out dynamically at some point?
+      vc.set(CV_CAP_PROP_FRAME_WIDTH, opts.frame_width);
+      vc.set(CV_CAP_PROP_FRAME_HEIGHT, opts.frame_height);
 
 
-    cv::Mat show;
-    if (detections.empty()) {
+   }
 
-      show = frame;
-      string idToText = "---Nothing Detected---";
-        putText(frame, idToText,
-	     cvPoint(30,30),
-             cv::FONT_HERSHEY_PLAIN,
-             1.5, cvScalar(180,250,0), 1, CV_AA);
+   std::cout << "Set camera to resolution: "
+      << vc.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
+      << vc.get(CV_CAP_PROP_FRAME_HEIGHT) << "\n";
 
-    } else  {
+   cv::Mat frame;
+   cv::Point2d opticalCenter;
 
-      // Get time of frame/detection----------------
-      //show = family.superimposeDetections(frame, detections); //-- Used to actually
-      //superimpose tag image in video
-      show = frame;
+   vc >> frame;
+   if (frame.empty()) {
+      std::cerr << "no frames!\n";
+      exit(1);
+   }
 
-      double s = opts.tag_size;
-      double ss = 0.5*s;
-      /* sz changed to negative value to flip cube */
-      double sz = -s;
+   /* Optical Center of video capturing frame with X and Y coordinates */
+   opticalCenter.x = frame.cols * 0.5;
+   opticalCenter.y = frame.rows * 0.5;
 
-      enum { npoints = 8, nedges = 12 };
+   std::string win = "GulliViewer";
 
-      /* Cube fliped by changing sz to negative */
-      cv::Point3d src[npoints] = {
-        cv::Point3d(-ss, -ss, 0),
-        cv::Point3d( ss, -ss, 0),
-        cv::Point3d( ss,  ss, 0),
-        cv::Point3d(-ss,  ss, 0),
-        cv::Point3d(-ss, -ss, sz),
-        cv::Point3d( ss, -ss, sz),
-        cv::Point3d( ss,  ss, sz),
-        cv::Point3d(-ss,  ss, sz),
-      };
+   TagDetectorParams& params = opts.params;
+   TagDetector detector(family, params);
 
+   TagDetectionArray detections;
+   TagDetectionArray source_points;
+   TagDetectionArray dest_points;
+   TagDetectionArray dst;
+   TagDetectionArray newDetections;
 
-      /* Possible edges of the box created. Come back to THIS*/
-      int edges[nedges][2] = {
+   int cvPose = 0;
+   boost::asio::io_service io_service;
+   udp::resolver resolver(io_service);
+   udp::resolver::query query(udp::v4(), "127.0.0.1", "daytime");
+   udp::endpoint receiver_endpoint = *resolver.resolve(query);
 
-        { 0, 1 },
-        { 1, 2 },
-        { 2, 3 },
-        { 3, 0 },
+   udp::socket socket(io_service);
+   socket.open(udp::v4());
 
-        /* Comment out two matrices below for 2D box */
-        { 4, 5 },
-        { 5, 6 },
-        { 6, 7 },
-        { 7, 4 },
+   uint32_t seq = 0;
+   while (1) {
 
-        { 0, 4 },
-        { 1, 5 },
-        { 2, 6 },
-        { 3, 7 }
+      vc >> frame;
+      ptime start;
+      start = boost::posix_time::microsec_clock::local_time();
+      //std::cout << "Start Time " << start << "\n";
+      //std::string startProcStr = helper::num2str(boost::posix_time::microsec_clock::local_time());
+      if (frame.empty()) {
+         break;
+      }
 
-      };
-
-      cv::Point2d dst[npoints];
-
-      double f = opts.focal_length;
-      /* Optical centers, possible 2D config*/
-      double K[9] = {
-        f, 0, opticalCenter.x,
-        0, f, opticalCenter.y,
-        0, 0, 1
-      };
-
-      cv::Mat_<cv::Point3d> srcmat(npoints, 1, src);
-      cv::Mat_<cv::Point2d> dstmat(npoints, 1, dst);
-
-      cv::Mat_<double>      Kmat(3, 3, K);
-
-      cv::Mat_<double>      distCoeffs = cv::Mat_<double>::zeros(4,1);
-
-      boost::array<uint8_t, 256> recv_buf;
-      size_t index = 0;
-
-      recv_buf[index++] = seq >> 24;
-      recv_buf[index++] = seq >> 16;
-      recv_buf[index++] = seq >> 8;
-      recv_buf[index++] = seq;
-      size_t len = 0;
-      index += 4;
+      detector.process(frame, opticalCenter, detections);
 
 
-      for (size_t i=0; i<detections.size(); ++i) {
-         //Add code in order to copy and send array
-         //Static buffer
-         TagDetection &dd = detections[i];
-         // Origin of axis detected
-         if (dd.id == 0) {
-            putText(frame, "0,0",
-                  cv::Point(dd.cxy.x,dd.cxy.y),
-                  CV_FONT_NORMAL,
-                  1.0, cvScalar(0,0,250), 2, CV_AA);
-            a1 = dd.cxy.x;
-            a2 = dd.cxy.y;
-            // New X-Axis detected
-         } else if (dd.id == 1) {
-            putText(frame, "X Axis",
-                  cv::Point(dd.cxy.x,dd.cxy.y),
-                  CV_FONT_NORMAL,
-                  1.0, cvScalar(0,0,250), 2, CV_AA);
-            b1 = dd.cxy.x;
-            b2 = dd.cxy.y;
-//            b1 = b1-a1;
-//            b2 = b2-a2;
-            // New Y-Axis detected
-         } else if (dd.id == 2) {
-            putText(frame, "Y Axis",
-                  cv::Point(dd.cxy.x,dd.cxy.y),
-                  CV_FONT_NORMAL,
-                  1.0, cvScalar(0,0,250), 2, CV_AA);
-            c1 = dd.cxy.x;
-            c2 = dd.cxy.y;
-//            c1 = c1-a1;
-//            c2 = c2-a2;
-            // Quad Angle used for perspective transform
-         } else if (dd.id == 3) {
-            putText(frame, "Quad Axis",
-                  cv::Point(dd.cxy.x,dd.cxy.y),
-                  CV_FONT_NORMAL,
-                  1.0, cvScalar(0,0,250), 2, CV_AA);
-            d1 = dd.cxy.x;
-            d2 = dd.cxy.y;
-//            d1 = d1-a1;
-//            d2 = d2-a2;
+      cv::Mat show;
+      if (detections.empty()) {
+
+         show = frame;
+         string idToText = "---Nothing Detected---";
+         putText(frame, idToText,
+               cvPoint(30,30),
+               cv::FONT_HERSHEY_PLAIN,
+               1.5, cvScalar(180,250,0), 1, CV_AA);
+
+      } else  {
+
+         // Get time of frame/detection----------------
+         //show = family.superimposeDetections(frame, detections); //-- Used to actually
+         //superimpose tag image in video
+         show = frame;
+
+         double s = opts.tag_size;
+         double ss = 0.5*s;
+         /* sz changed to negative value to flip cube */
+         double sz = -s;
+
+         enum { npoints = 8, nedges = 12 };
+
+         /* Cube fliped by changing sz to negative */
+         cv::Point3d src[npoints] = {
+            cv::Point3d(-ss, -ss, 0),
+            cv::Point3d( ss, -ss, 0),
+            cv::Point3d( ss,  ss, 0),
+            cv::Point3d(-ss,  ss, 0),
+            cv::Point3d(-ss, -ss, sz),
+            cv::Point3d( ss, -ss, sz),
+            cv::Point3d( ss,  ss, sz),
+            cv::Point3d(-ss,  ss, sz),
+         };
+
+
+         /* Possible edges of the box created. Come back to THIS*/
+         int edges[nedges][2] = {
+
+            { 0, 1 },
+            { 1, 2 },
+            { 2, 3 },
+            { 3, 0 },
+
+            /* Comment out two matrices below for 2D box */
+            { 4, 5 },
+            { 5, 6 },
+            { 6, 7 },
+            { 7, 4 },
+
+            { 0, 4 },
+            { 1, 5 },
+            { 2, 6 },
+            { 3, 7 }
+
+         };
+
+         cv::Point2d dst[npoints];
+
+         double f = opts.focal_length;
+         /* Optical centers, possible 2D config*/
+         double K[9] = {
+            f, 0, opticalCenter.x,
+            0, f, opticalCenter.y,
+            0, 0, 1
+         };
+
+         cv::Mat_<cv::Point3d> srcmat(npoints, 1, src);
+         cv::Mat_<cv::Point2d> dstmat(npoints, 1, dst);
+
+         cv::Mat_<double>      Kmat(3, 3, K);
+
+         cv::Mat_<double>      distCoeffs = cv::Mat_<double>::zeros(4,1);
+
+         boost::array<uint8_t, 256> recv_buf;
+         size_t index = 0;
+
+         recv_buf[index++] = seq >> 24;
+         recv_buf[index++] = seq >> 16;
+         recv_buf[index++] = seq >> 8;
+         recv_buf[index++] = seq;
+         size_t len = 0;
+         index += 4;
+
+
+         for (size_t i=0; i<detections.size(); ++i) {
+            //Add code in order to copy and send array
+            //Static buffer
+            TagDetection &dd = detections[i];
+            // Origin of axis detected
+            if (dd.id == 0) {
+               putText(frame, "0,0",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+               a1 = dd.cxy.x;
+               a2 = dd.cxy.y;
+               // New X-Axis detected
+            } else if (dd.id == 1) {
+               putText(frame, "X Axis",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+               b1 = dd.cxy.x;
+               b2 = dd.cxy.y;
+               //            b1 = b1-a1;
+               //            b2 = b2-a2;
+               // New Y-Axis detected
+            } else if (dd.id == 2) {
+               putText(frame, "Y Axis",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+               c1 = dd.cxy.x;
+               c2 = dd.cxy.y;
+               //            c1 = c1-a1;
+               //            c2 = c2-a2;
+               // Quad Angle used for perspective transform
+            } else if (dd.id == 3) {
+               putText(frame, "Quad Axis",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+               d1 = dd.cxy.x;
+               d2 = dd.cxy.y;
+               //            d1 = d1-a1;
+               //            d2 = d2-a2;
+            }
          }
-      }
 
-		//cv::Mat edited;
-		//cv::Mat dist;
-		//cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
+         //cv::Mat edited;
+         //cv::Mat dist;
+         //cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
 
-		//cv::imshow( "Display window" , edited );
-	// Other ID's and coordinates detected
-		//double det = 1.0/(b1*c2-c1*b2);
-		//std::cout<<"1/det "<<det<<"\n";
-		//double f1 = det*c2;
-		//double f2 = det*(-c1);
-		//double f3 = det*(-b2);
-		//double f4 = det*b1;
+         //cv::imshow( "Display window" , edited );
+         // Other ID's and coordinates detected
+         //double det = 1.0/(b1*c2-c1*b2);
+         //std::cout<<"1/det "<<det<<"\n";
+         //double f1 = det*c2;
+         //double f2 = det*(-c1);
+         //double f3 = det*(-b2);
+         //double f4 = det*b1;
 
-		at::Point source_points[4];
-		at::Point dest_points[4];
+         at::Point source_points[4];
+         at::Point dest_points[4];
 
 
-		source_points[0] = at::Point(a1, a2);
-		source_points[1] = at::Point(b1, b2);
-		source_points[2] = at::Point(d1, d2);
-		source_points[3] = at::Point(c1, c2);
+         source_points[0] = at::Point(a1, a2);
+         source_points[1] = at::Point(b1, b2);
+         source_points[2] = at::Point(d1, d2);
+         source_points[3] = at::Point(c1, c2);
 
-		//std::cout << "One: " << one << "\n";
+         //std::cout << "One: " << one << "\n";
 
-		dest_points[0] =  at::Point(0.0, 0.0);
-		dest_points[1] =  at::Point(1.0, 0.0);
-		dest_points[2] =  at::Point(1.0, 1.0);
-		dest_points[3] =  at::Point(0.0, 1.0);
+         dest_points[0] =  at::Point(0.0, 0.0);
+         dest_points[1] =  at::Point(1.0, 0.0);
+         dest_points[2] =  at::Point(1.0, 1.0);
+         dest_points[3] =  at::Point(0.0, 1.0);
 
-		pts = getPerspectiveTransform(source_points, dest_points);
-		//std::cout<<"PTS: " << pts << "\n";
+         pts = getPerspectiveTransform(source_points, dest_points);
+         //std::cout<<"PTS: " << pts << "\n";
 
-      std::vector<at::Point>  prevDetections(detections.size());
-      for (size_t i=0; i<detections.size(); ++i) {
-         TagDetection &dd = detections[i];
-         prevDetections[i] = at::Point(dd.cxy.x, dd.cxy.y);
-      }
-      std::vector<at::Point>  newDetections(detections.size());
-		perspectiveTransform(prevDetections, newDetections, pts);
+         std::vector<at::Point>  prevDetections(detections.size());
+         for (size_t i=0; i<detections.size(); ++i) {
+            TagDetection &dd = detections[i];
+            prevDetections[i] = at::Point(dd.cxy.x, dd.cxy.y);
+         }
+         std::vector<at::Point>  newDetections(detections.size());
+         perspectiveTransform(prevDetections, newDetections, pts);
 
-   for (size_t i=0; i<detections.size(); ++i) {
-      TagDetection &dd = detections[i];
-      if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3) {
-		//boost::chrono::nanoseconds start;
+         for (size_t i=0; i<detections.size(); ++i) {
+            TagDetection &dd = detections[i];
+            if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3) {
+               //boost::chrono::nanoseconds start;
 
-		double x_new = newDetections[i].x;
-		double y_new = newDetections[i].y;
+               double x_new = newDetections[i].x;
+               double y_new = newDetections[i].y;
 
 #if 0
-		double x_new = f1*(dd.cxy.x-a1) + f2*(dd.cxy.y-a2);
-		double y_new = f3*(dd.cxy.x-a1) + f4*(dd.cxy.y-a2);
+               double x_new = f1*(dd.cxy.x-a1) + f2*(dd.cxy.y-a2);
+               double y_new = f3*(dd.cxy.x-a1) + f4*(dd.cxy.y-a2);
 #endif
 
-		//-------- Start of Perspcetive Transform TODO-------//
+               //-------- Start of Perspcetive Transform TODO-------//
 
-		//cv::Mat dst;
-		//cv::warpPerspective(frame, dst, pts, cv::Size(640, 480));
-		//---perspectiveTransform(detections, newDetections, pts);
-		//dist = OpenWarpPerspective(frame,one,two,three,four,five,six,seven,eight,edited);
-		//std::cout << "EDITED: " << edited << "\n";
-		//TagDetection &ddn = newDetections[i];
-		//std::cout << "New Coordinates X?: " << ddn.cxy.x  << "\n";
-		//-----------------End Perspective Transform TODO----------//
+               //cv::Mat dst;
+               //cv::warpPerspective(frame, dst, pts, cv::Size(640, 480));
+               //---perspectiveTransform(detections, newDetections, pts);
+               //dist = OpenWarpPerspective(frame,one,two,three,four,five,six,seven,eight,edited);
+               //std::cout << "EDITED: " << edited << "\n";
+               //TagDetection &ddn = newDetections[i];
+               //std::cout << "New Coordinates X?: " << ddn.cxy.x  << "\n";
+               //-----------------End Perspective Transform TODO----------//
 
-		// Print out Tag ID in center of Tag
-		putText(frame, helper::num2str(dd.id),
-		     cv::Point(dd.cxy.x,dd.cxy.y),
-		     CV_FONT_NORMAL,
-		     1.0, cvScalar(0,250,0), 2, CV_AA);
-
-
-
-		//TODO:Processing time
-		//boost::chrono::nanoseconds end;
-		//boost::chrono::nanoseconds count;
-		//count = end - start;
-
-		// d now holds the number of milliseconds from start to end.
-
-		//std::cout<< count.count()<< "\n";
-	        //End timestamp (Processing)
-		//std::string endProcStr = helper::num2str(boost::posix_time::microsec_clock::local_time());
-		//std::string totProcStr = endProcStr-startProcStr;
-		//std::cout <<"Processing time: " << totProcStr << "\n";
-		ptime end;
-		end = boost::posix_time::microsec_clock::local_time();
-		//std::cout << "End Time " << end << "\n";
-		time_duration processTime = end-start;
-		//difftime(end,start);
-		std::string procTim = helper::num2str(processTime);
-		//std::cout << "Elapsed Time: " << procTim << "\n";
-
-      recv_buf[index++] = dd.id;
-      int32_t x_coord = (int32_t)(x_new * 1000.0);
-      recv_buf[index++] = x_coord >> 24;
-      recv_buf[index++] = x_coord >> 16;
-      recv_buf[index++] = x_coord >> 8;
-      recv_buf[index++] = x_coord;
-      int32_t y_coord = (int32_t)(y_new * 1000.0);
-      recv_buf[index++] = y_coord >> 24;
-      recv_buf[index++] = y_coord >> 16;
-      recv_buf[index++] = y_coord >> 8;
-      recv_buf[index++] = y_coord;
-      ++len;
-      std::cout << dd.id << " " << x_coord << " " << y_coord << std::endl;
-
-//		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
-//		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::microsec_clock::local_time()) + " [" +  helper::num2str(start) + "]";
-
-		//std::cout<<"Output: " << outPut <<"\n";
-		//std::string startTime =;
-		//std::cout<<receiver_endpoint<<"\n";
-		//socket.send_to(boost::asio::buffer(startTime),
-          	//receiver_endpoint);
-		//Print out detections and full packet to be sent to server
-		//std::cout << outPut << "\n";
-
-		//Change coordinates to int, lose the extra decimal places
-		//std::cout << "---Coordinates X---: " << x_new << "\n";
-		//std::cout << "---Coordinates Y---: " << y_new << "\n";
-		//Get the time of full processing/timestamp for packet
-	}
-
-	//std::cout << newOrgX << "\n";
-
-        //for (cvPose=0; cvPose<2; ++cvPose) {
-        if (1) {
-
-          cv::Mat r, t;
-
-          if (cvPose) {
+               // Print out Tag ID in center of Tag
+               putText(frame, helper::num2str(dd.id),
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,250,0), 2, CV_AA);
 
 
-            CameraUtil::homographyToPoseCV(f, f, s,
-                                           detections[i].homography,
-                                           r, t);
 
-          } else {
+               //TODO:Processing time
+               //boost::chrono::nanoseconds end;
+               //boost::chrono::nanoseconds count;
+               //count = end - start;
 
-            cv::Mat_<double> M =
-              CameraUtil::homographyToPose(f, f, s,
-                                           detections[i].homography,
-                                           false);
+               // d now holds the number of milliseconds from start to end.
 
-            cv::Mat_<double> R = M.rowRange(0,3).colRange(0, 3);
+               //std::cout<< count.count()<< "\n";
+               //End timestamp (Processing)
+               //std::string endProcStr = helper::num2str(boost::posix_time::microsec_clock::local_time());
+               //std::string totProcStr = endProcStr-startProcStr;
+               //std::cout <<"Processing time: " << totProcStr << "\n";
+               ptime end;
+               end = boost::posix_time::microsec_clock::local_time();
+               //std::cout << "End Time " << end << "\n";
+               time_duration processTime = end-start;
+               //difftime(end,start);
+               std::string procTim = helper::num2str(processTime);
+               //std::cout << "Elapsed Time: " << procTim << "\n";
 
-            t = M.rowRange(0,3).col(3);
+               recv_buf[index++] = dd.id;
+               int32_t x_coord = (int32_t)(x_new * 1000.0);
+               recv_buf[index++] = x_coord >> 24;
+               recv_buf[index++] = x_coord >> 16;
+               recv_buf[index++] = x_coord >> 8;
+               recv_buf[index++] = x_coord;
+               int32_t y_coord = (int32_t)(y_new * 1000.0);
+               recv_buf[index++] = y_coord >> 24;
+               recv_buf[index++] = y_coord >> 16;
+               recv_buf[index++] = y_coord >> 8;
+               recv_buf[index++] = y_coord;
+               ++len;
+               std::cout << dd.id << " " << x_coord << " " << y_coord << std::endl;
 
-            cv::Rodrigues(R, r);
+               //		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
+               //		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::microsec_clock::local_time()) + " [" +  helper::num2str(start) + "]";
 
-          }
+               //std::cout<<"Output: " << outPut <<"\n";
+               //std::string startTime =;
+               //std::cout<<receiver_endpoint<<"\n";
+               //socket.send_to(boost::asio::buffer(startTime),
+               //receiver_endpoint);
+               //Print out detections and full packet to be sent to server
+               //std::cout << outPut << "\n";
 
-          cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
+               //Change coordinates to int, lose the extra decimal places
+               //std::cout << "---Coordinates X---: " << x_new << "\n";
+               //std::cout << "---Coordinates Y---: " << y_new << "\n";
+               //Get the time of full processing/timestamp for packet
+            }
 
-	  /* Used to draw lines on video image */
-          for (int j=0; j<nedges; ++j) {
-            cv::line(show,
-                     dstmat(edges[j][0],0),
-                     dstmat(edges[j][1],0),
-                     cvPose ? CV_RGB(0,0,255) : CV_RGB(255,0,0),
-                     1, CV_AA);
+            //std::cout << newOrgX << "\n";
 
-          }
+            if (1) {
 
-        }
+               cv::Mat r, t;
+
+               if (cvPose) {
+
+
+                  CameraUtil::homographyToPoseCV(f, f, s,
+                        detections[i].homography,
+                        r, t);
+
+               } else {
+
+                  cv::Mat_<double> M =
+                     CameraUtil::homographyToPose(f, f, s,
+                           detections[i].homography,
+                           false);
+
+                  cv::Mat_<double> R = M.rowRange(0,3).colRange(0, 3);
+
+                  t = M.rowRange(0,3).col(3);
+
+                  cv::Rodrigues(R, r);
+
+               }
+
+               cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
+
+               /* Used to draw lines on video image */
+               for (int j=0; j<nedges; ++j) {
+                  cv::line(show,
+                        dstmat(edges[j][0],0),
+                        dstmat(edges[j][1],0),
+                        cvPose ? CV_RGB(0,0,255) : CV_RGB(255,0,0),
+                        1, CV_AA);
+
+               }
+
+            }
+
+         }
+
+         index = 4;
+         recv_buf[index++] = len << 24;
+         recv_buf[index++] = len << 16;
+         recv_buf[index++] = len << 8;
+         recv_buf[index++] = len;
+         socket.send_to(boost::asio::buffer(recv_buf), receiver_endpoint);
+         ++seq;
 
       }
 
-   index = 4;
-   recv_buf[index++] = len << 24;
-   recv_buf[index++] = len << 16;
-   recv_buf[index++] = len << 8;
-   recv_buf[index++] = len;
-   socket.send_to(boost::asio::buffer(recv_buf), receiver_endpoint);
-   ++seq;
+      if (opts.mirror_display) {
+         cv::flip(show, show, 1);
+      }
 
-    }
+      cv::imshow(win, show);
+      int k = cv::waitKey(5);
+      if (k % 256 == 's') {
+         cv::imwrite("frame.png", frame);
+         std::cout << "wrote frame.png\n";
+      } else if (k % 256 == 'p') {
+         cvPose = !cvPose;
+      } else if (k % 256 == 27 /* ESC */) {
+         break;
+      }
 
-    if (opts.mirror_display) {
-      cv::flip(show, show, 1);
-    }
+   }
+   /* Report times of position? */
+   detector.reportTimers();
 
-    cv::imshow(win, show);
-    int k = cv::waitKey(5);
-    if (k % 256 == 's') {
-      cv::imwrite("frame.png", frame);
-      std::cout << "wrote frame.png\n";
-    } else if (k % 256 == 'p') {
-      cvPose = !cvPose;
-    } else if (k % 256 == 27 /* ESC */) {
-      break;
-    }
-
-  }
-  /* Report times of position? */
-  detector.reportTimers();
-
-  return 0;
+   return 0;
 
 
 }
