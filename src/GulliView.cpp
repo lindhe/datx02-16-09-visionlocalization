@@ -267,7 +267,15 @@ int main(int argc, char** argv) {
   TagDetectionArray newDetections;
 
   int cvPose = 0;
+  boost::asio::io_service io_service;
+  udp::resolver resolver(io_service);
+  udp::resolver::query query(udp::v4(), "127.0.0.1", "daytime");
+  udp::endpoint receiver_endpoint = *resolver.resolve(query);
 
+  udp::socket socket(io_service);
+  socket.open(udp::v4());
+
+  uint32_t seq = 0;
   while (1) {
 
     vc >> frame;
@@ -354,6 +362,17 @@ int main(int argc, char** argv) {
       cv::Mat_<double>      Kmat(3, 3, K);
 
       cv::Mat_<double>      distCoeffs = cv::Mat_<double>::zeros(4,1);
+
+      boost::array<uint8_t, 256> recv_buf;
+      size_t index = 0;
+
+      recv_buf[index++] = seq >> 24;
+      recv_buf[index++] = seq >> 16;
+      recv_buf[index++] = seq >> 8;
+      recv_buf[index++] = seq;
+      size_t len = 0;
+      index += 4;
+
 
       for (size_t i=0; i<detections.size(); ++i) {
          //Add code in order to copy and send array
@@ -491,21 +510,27 @@ int main(int argc, char** argv) {
 		//difftime(end,start);
 		std::string procTim = helper::num2str(processTime);
 		//std::cout << "Elapsed Time: " << procTim << "\n";
-		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
-		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::microsec_clock::local_time()) + " [" +  helper::num2str(start) + "]";
+
+      recv_buf[index++] = dd.id;
+      int32_t x_coord = (int32_t)(x_new * 1000.0);
+      recv_buf[index++] = x_coord >> 24;
+      recv_buf[index++] = x_coord >> 16;
+      recv_buf[index++] = x_coord >> 8;
+      recv_buf[index++] = x_coord;
+      int32_t y_coord = (int32_t)(y_new * 1000.0);
+      recv_buf[index++] = y_coord >> 24;
+      recv_buf[index++] = y_coord >> 16;
+      recv_buf[index++] = y_coord >> 8;
+      recv_buf[index++] = y_coord;
+      ++len;
+      std::cout << dd.id << " " << x_coord << " " << y_coord << std::endl;
+
+//		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
+//		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::microsec_clock::local_time()) + " [" +  helper::num2str(start) + "]";
 
 		//std::cout<<"Output: " << outPut <<"\n";
 		//std::string startTime =;
-		boost::asio::io_service io_service;
-		udp::resolver resolver(io_service);
-		udp::resolver::query query(udp::v4(), "127.0.0.1", "daytime");
-		udp::endpoint receiver_endpoint = *resolver.resolve(query);
-
-		udp::socket socket(io_service);
-		socket.open(udp::v4());
 		//std::cout<<receiver_endpoint<<"\n";
-      		socket.send_to(boost::asio::buffer(outPut),
-          	receiver_endpoint);
 		//socket.send_to(boost::asio::buffer(startTime),
           	//receiver_endpoint);
 		//Print out detections and full packet to be sent to server
@@ -562,6 +587,13 @@ int main(int argc, char** argv) {
 
       }
 
+   index = 4;
+   recv_buf[index++] = len << 24;
+   recv_buf[index++] = len << 16;
+   recv_buf[index++] = len << 8;
+   recv_buf[index++] = len;
+   socket.send_to(boost::asio::buffer(recv_buf), receiver_endpoint);
+   ++seq;
 
     }
 
