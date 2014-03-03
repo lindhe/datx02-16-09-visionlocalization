@@ -38,23 +38,34 @@ int main()
 
       udp::socket socket(io_service, udp::endpoint(udp::v4(), 13));
 
+      boost::array<uint8_t, 256> recv_buf;
       for (;;) {
-         boost::array<uint8_t, 256> recv_buf;
          udp::endpoint remote_endpoint;
          //boost::system::error_code error;
          socket.receive_from( boost::asio::buffer(recv_buf), remote_endpoint);
          ptime recvTime;
          recvTime = boost::posix_time::microsec_clock::local_time();
          uint32_t index = 0;
-         uint32_t seq = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-         uint32_t len = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-         std::cout << "seq " << seq << " len " << len << std::endl;
-         for (size_t i = 0; i < len; ++i) {
-            uint32_t id = recv_buf[index++];
-            int32_t x = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-            int32_t y = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+         uint32_t type    =  recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+         uint32_t sub_type = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
 
-            std::cout << "Tag: " << id << " x: " << x << " y: " << y << std::endl;
+         recv_buf[index-1] = 1; //HACK: prepare for retransmission
+
+         if (type == 1 and sub_type == 2) {
+            uint32_t seq     = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+            index += 16;
+            uint32_t len     = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+            std::cout << "seq " << seq << " len " << len << std::endl;
+            for (size_t i = 0; i < len; ++i) {
+               int32_t id= recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+               int32_t x = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+               int32_t y = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+               int32_t t = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+
+               std::cout << "Tag: " << id << " x: " << x << " y: " << y << " heading: " << t << std::endl;
+            }
+         } else if (type == 1 and sub_type == 1) { //TODO: Correct types
+            socket.send_to(boost::asio::buffer(recv_buf), remote_endpoint);
          }
          //std::cout<< recvTime << "\n";
 //      std::string data(recv_buf.begin(), recv_buf.end());

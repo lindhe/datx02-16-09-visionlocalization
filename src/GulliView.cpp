@@ -368,11 +368,37 @@ int main(int argc, char** argv) {
          boost::array<uint8_t, 256> recv_buf;
          size_t index = 0;
 
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 1; //type
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 2; //subtype
          recv_buf[index++] = seq >> 24;
          recv_buf[index++] = seq >> 16;
          recv_buf[index++] = seq >> 8;
          recv_buf[index++] = seq;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0; // todo: age [s]
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0;
+         recv_buf[index++] = 0; // todo: age [us]
          size_t len = 0;
+
+         size_t len_index = index;
          index += 4;
 
 
@@ -513,7 +539,11 @@ int main(int argc, char** argv) {
                std::string procTim = helper::num2str(processTime);
                //std::cout << "Elapsed Time: " << procTim << "\n";
 
-               recv_buf[index++] = dd.id;
+               uint32_t id = dd.id - 3;
+               recv_buf[index++] = id >> 24;
+               recv_buf[index++] = id >> 16;
+               recv_buf[index++] = id >> 8;
+               recv_buf[index++] = id;
                int32_t x_coord = (int32_t)(x_new * 1000.0);
                recv_buf[index++] = x_coord >> 24;
                recv_buf[index++] = x_coord >> 16;
@@ -524,6 +554,11 @@ int main(int argc, char** argv) {
                recv_buf[index++] = y_coord >> 16;
                recv_buf[index++] = y_coord >> 8;
                recv_buf[index++] = y_coord;
+               int32_t heading = 0; //TODO
+               recv_buf[index++] = heading >> 24;
+               recv_buf[index++] = heading >> 16;
+               recv_buf[index++] = heading >> 8;
+               recv_buf[index++] = heading;
                ++len;
                std::cout << dd.id << " " << x_coord << " " << y_coord << std::endl;
 
@@ -588,7 +623,7 @@ int main(int argc, char** argv) {
 
          }
 
-         index = 4;
+         index = len_index;
          recv_buf[index++] = len << 24;
          recv_buf[index++] = len << 16;
          recv_buf[index++] = len << 8;
