@@ -31,59 +31,55 @@ using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
 int main()
 {
-  // Create logfile to be used
-  std::ofstream fout("GulliViewLog.txt");
-  try
-  {
-    boost::asio::io_service io_service;
+   // Create logfile to be used
+   std::ofstream fout("GulliViewLog.txt");
+   try {
+      boost::asio::io_service io_service;
 
-    udp::socket socket(io_service, udp::endpoint(udp::v4(), 13));
+      udp::socket socket(io_service, udp::endpoint(udp::v4(), 13));
 
-    for (;;)
-    {
-      boost::array<uint8_t, 256> recv_buf;
-      udp::endpoint remote_endpoint;
-      //boost::system::error_code error;
-      socket.receive_from( boost::asio::buffer(recv_buf), remote_endpoint);
-      ptime recvTime;
-      recvTime = boost::posix_time::microsec_clock::local_time();
-      uint32_t index = 0;
-      uint32_t seq = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-      uint32_t len = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-      std::cout << "seq " << seq << " len " << len << std::endl;
-      for (size_t i = 0; i < len; ++i) {
-         uint32_t id = recv_buf[index++];
-         int32_t x = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-         int32_t y = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+      for (;;) {
+         boost::array<uint8_t, 256> recv_buf;
+         udp::endpoint remote_endpoint;
+         //boost::system::error_code error;
+         socket.receive_from( boost::asio::buffer(recv_buf), remote_endpoint);
+         ptime recvTime;
+         recvTime = boost::posix_time::microsec_clock::local_time();
+         uint32_t index = 0;
+         uint32_t seq = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+         uint32_t len = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+         std::cout << "seq " << seq << " len " << len << std::endl;
+         for (size_t i = 0; i < len; ++i) {
+            uint32_t id = recv_buf[index++];
+            int32_t x = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+            int32_t y = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
 
-         std::cout << "Tag: " << id << " x: " << x << " y: " << y << std::endl;
-      }
-      //std::cout<< recvTime << "\n";
+            std::cout << "Tag: " << id << " x: " << x << " y: " << y << std::endl;
+         }
+         //std::cout<< recvTime << "\n";
 //      std::string data(recv_buf.begin(), recv_buf.end());
 //      std::cout << "Data: " << data << "\n";
 //      unsigned firstDel = data.find('[');
 //      unsigned lastDel = data.find(']');
 //      string strNew = data.substr (firstDel+1,(lastDel-firstDel)-1);
-      //std::cout << strNew << "\n";
+         //std::cout << strNew << "\n";
 //      ptime startProcTime;
 //      startProcTime = boost::lexical_cast<ptime>(strNew);
-      //std::cout << startProcTime << "\n";
+         //std::cout << startProcTime << "\n";
 //      time_duration fullProcessTime = recvTime - startProcTime;
-      //std::cout << "Full Proc Time: " <<fullProcessTime << "\n";
-      // Time Stamp --- Received
-      //std::cout << recv_buf.data() << "\n";
-      // Write to logfile and save
+         //std::cout << "Full Proc Time: " <<fullProcessTime << "\n";
+         // Time Stamp --- Received
+         //std::cout << recv_buf.data() << "\n";
+         // Write to logfile and save
 //      fout << recv_buf.data() << "" << std::endl;
 
 
-    }
-  }
-  catch (std::exception& e)
-  {
-    std::cerr << e.what() << std::endl;
-  }
-  // Close log file
-  fout << "Program closed: " << std::endl;
-  fout.close();
-  return 0;
+      }
+   } catch (std::exception& e) {
+      std::cerr << e.what() << std::endl;
+   }
+   // Close log file
+   fout << "Program closed: " << std::endl;
+   fout.close();
+   return 0;
 }
