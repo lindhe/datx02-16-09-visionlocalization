@@ -3,6 +3,9 @@
 // ~~~~~~~~~~
 //
 // Copyright (c) 2003-2008 Christopher M. Kohlhoff (chris at kohlhoff dot com)
+// Copyright (c) 2013-2014 Andrew Soderberg-Rivkin <sandrew@student.chalmers.se>
+// Copyright (c) 2013-2014 Sanjana Hangal <sanjana@student.chalmers.se>
+// Copyright (c) 2014 Thomas Petig <petig@chalmers.se>
 //
 // Distributed under the Boost Software License, Version 1.0. (See accompanying
 // file LICENSE_1_0.txt or copy at http://www.boost.org/LICENSE_1_0.txt)

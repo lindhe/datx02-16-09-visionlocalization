@@ -8,8 +8,9 @@
  * Code modified for project in Vision Based Localization for
  * Autonomous Vehicles at Chalmers University, Goteborg, Sweden
  * Modification Authors:
- * Andrew Soderberg-Rivkin <sandrew@student.chalmers.se>
- * Sanjana Hangal <sanjana@student.chalmers.se>
+ * Copyright (c) 2013-2014 Andrew Soderberg-Rivkin <sandrew@student.chalmers.se>
+ * Copyright (c) 2013-2014 Sanjana Hangal <sanjana@student.chalmers.se>
+ * Copyright (c) 2014 Thomas Petig <petig@chalmers.se>
  ********************************************************************/
 
 #include "TagDetector.h"
