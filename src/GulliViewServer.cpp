@@ -40,10 +40,12 @@ int main()
       boost::asio::io_service io_service;
 
       udp::socket socket(io_service, udp::endpoint(udp::v4(), 13));
+      boost::array<uint8_t, 256> answer;
 
       boost::array<uint8_t, 256> recv_buf;
       for (;;) {
          udp::endpoint remote_endpoint;
+         
          //boost::system::error_code error;
          socket.receive_from( boost::asio::buffer(recv_buf), remote_endpoint);
          ptime recvTime;
@@ -52,8 +54,9 @@ int main()
          uint32_t type    =  recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
          uint32_t sub_type = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
 
-         recv_buf[index-1] = 1; //HACK: prepare for retransmission
-
+         //recv_buf[index-1] = 1; //HACK: prepare for retransmission
+         
+         //New position data from the camera
          if (type == 1 and sub_type == 2) {
             uint32_t seq     = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
             index += 16;
@@ -64,11 +67,17 @@ int main()
                int32_t x = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
                int32_t y = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
                int32_t t = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-
+               answer = recv_buf;
                std::cout << "Tag: " << id << " x: " << x << " y: " << y << " heading: " << t << std::endl;
             }
+            //Data request from the Gulliver map client
          } else if (type == 1 and sub_type == 1) { //TODO: Correct types
-            socket.send_to(boost::asio::buffer(recv_buf), remote_endpoint);
+             //Set the type to the response type 
+             answer[3] = 2;
+             answer[7] = 2;
+             udp::socket replysocket(io_service, udp::endpoint(udp::v4(), 8989));
+             udp::endpoint remote_2 (remote_endpoint.address(),4242);
+             replysocket.send_to(boost::asio::buffer(answer), remote_2);
          }
          //std::cout<< recvTime << "\n";
 //      std::string data(recv_buf.begin(), recv_buf.end());
