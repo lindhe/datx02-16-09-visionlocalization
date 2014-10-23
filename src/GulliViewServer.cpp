@@ -45,34 +45,34 @@ int main()
       boost::array<uint8_t, 256> recv_buf;
       for (;;) {
          udp::endpoint remote_endpoint;
-         
+
          //boost::system::error_code error;
          socket.receive_from( boost::asio::buffer(recv_buf), remote_endpoint);
          ptime recvTime;
          recvTime = boost::posix_time::microsec_clock::local_time();
          uint32_t index = 0;
-         uint32_t type    =  recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-         uint32_t sub_type = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+         uint32_t type    =  recv_buf[0] << 24 | recv_buf[1] << 16 | recv_buf[2] << 8 | recv_buf[3];
+         uint32_t sub_type = recv_buf[4] << 24 | recv_buf[5] << 16 | recv_buf[6] << 8 | recv_buf[7];
 
          //recv_buf[index-1] = 1; //HACK: prepare for retransmission
-         
+
          //New position data from the camera
          if (type == 1 and sub_type == 2) {
-            uint32_t seq     = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+            uint32_t seq     = recv_buf[8] << 24 | recv_buf[9] << 16 | recv_buf[10] << 8 | recv_buf[11];
             index += 16;
-            uint32_t len     = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+            uint32_t len     = recv_buf[28] << 24 | recv_buf[29] << 16 | recv_buf[30] << 8 | recv_buf[31];
             std::cout << "seq " << seq << " len " << len << std::endl;
             for (size_t i = 0; i < len; ++i) {
-               int32_t id= recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-               int32_t x = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-               int32_t y = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
-               int32_t t = recv_buf[index++] << 24 | recv_buf[index++] << 16 | recv_buf[index++] << 8 | recv_buf[index++];
+               int32_t id= recv_buf[32] << 24 | recv_buf[33] << 16 | recv_buf[34] << 8 | recv_buf[35];
+               int32_t x = recv_buf[36] << 24 | recv_buf[37] << 16 | recv_buf[38] << 8 | recv_buf[39];
+               int32_t y = recv_buf[40] << 24 | recv_buf[41] << 16 | recv_buf[42] << 8 | recv_buf[43];
+               int32_t t = recv_buf[44] << 24 | recv_buf[45] << 16 | recv_buf[46] << 8 | recv_buf[47];
                answer = recv_buf;
                std::cout << "Tag: " << id << " x: " << x << " y: " << y << " heading: " << t << std::endl;
             }
             //Data request from the Gulliver map client
          } else if (type == 1 and sub_type == 1) { //TODO: Correct types
-             //Set the type to the response type 
+             //Set the type to the response type
              answer[3] = 2;
              answer[7] = 2;
              udp::socket replysocket(io_service, udp::endpoint(udp::v4(), 8989));
