@@ -23,6 +23,7 @@
 #include <cstring>
 #include <cstdlib>
 #include <string>
+#include <signal.h>
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
@@ -48,6 +49,13 @@ using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
 //using namespace boost::asio;
 
+sig_atomic_t sig_stop = 0;
+
+void signal_handler (int param)
+{
+      sig_stop = 1;
+}
+
 double a1 = 0.0;
 double a2 = 0.0;
 double b1 = 0.0;
@@ -71,7 +79,8 @@ typedef struct GulliViewOptions {
       frame_height(0),
       /* Changed to False so that text comes out correctly. */
       /* Issues with detection when set to False */
-      mirror_display(false)
+      mirror_display(false),
+      no_gui(false)
   {
   }
   TagDetectorParams params;
@@ -83,6 +92,7 @@ typedef struct GulliViewOptions {
   int frame_width;
   int frame_height;
   bool mirror_display;
+  bool no_gui;
 } GulliViewOptions;
 
 
@@ -100,7 +110,8 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
  -z SIZE         Set the tag size in meters (default %f)\n\
  -W WIDTH        Set the camera image width in pixels\n\
  -H HEIGHT       Set the camera image height in pixels\n\
- -M              Toggle display mirroring\n",
+ -M              Toggle display mirroring\n\
+ -n              No gui\n",
           tool_name,
 	  /* Options removed that are not needed */
 	  /* Can be added later for further functionality */
@@ -165,6 +176,7 @@ GulliViewOptions parse_options(int argc, char** argv) {
       case 'W': opts.frame_width = atoi(optarg); break;
       case 'H': opts.frame_height = atoi(optarg); break;
       case 'M': opts.mirror_display = !opts.mirror_display; break;
+      case 'n': opts.no_gui = 1; break;
       default:
         fprintf(stderr, "\n");
         print_usage(argv[0], stderr);
@@ -209,6 +221,9 @@ cv::Mat OpenWarpPerspective(const cv::Mat& _image
 }
 
 int main(int argc, char** argv) {
+    //doing gracefull shutdown, prevents Linux USB system to crash
+    signal (SIGINT, signal_handler);
+
 
    //Buffer to hold tags and coordinates
    //char* buffer = new char[100];
@@ -638,14 +653,16 @@ int main(int argc, char** argv) {
          cv::flip(show, show, 1);
       }
 
-      cv::imshow(win, show);
+      if (not opts.no_gui) {
+          cv::imshow(win, show);
+      }
       int k = cv::waitKey(5);
       if (k % 256 == 's') {
          cv::imwrite("frame.png", frame);
          std::cout << "wrote frame.png\n";
       } else if (k % 256 == 'p') {
          cvPose = !cvPose;
-      } else if (k % 256 == 27 /* ESC */) {
+      } else if ((k % 256 == 27) or sig_stop/* ESC */) {
          break;
       }
 
