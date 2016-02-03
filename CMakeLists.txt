@@ -44,8 +44,8 @@ endif ()
  # message("CGAL not found, can not use new quad detector")
 #endif()
 
-set(CMAKE_C_FLAGS "-Wall -g -I /usr/include/boost -l boost_system -pthread")
-set(CMAKE_CXX_FLAGS "-Wall -g -I /usr/include/boost -l boost_system -pthread")
+set(CMAKE_C_FLAGS "-Wall -Wpedantic -g -I /usr/include/boost -l boost_system -pthread")
+set(CMAKE_CXX_FLAGS "-Wall -Wpedantic -g -I /usr/include/boost -l boost_system -pthread")
 
 if (APPLE)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wsign-compare")
