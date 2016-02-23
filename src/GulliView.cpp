@@ -38,9 +38,8 @@
 #include <boost/chrono/ceil.hpp>
 #include <boost/chrono/floor.hpp>
 #include <boost/chrono/round.hpp>
-
-#include "CameraUtil.h"
 #include "ueye.h"
+#include "CameraUtil.h"
 
 #define DEFAULT_TAG_FAMILY "Tag16h5"
 using namespace std;
@@ -81,7 +80,8 @@ typedef struct GulliViewOptions {
       /* Changed to False so that text comes out correctly. */
       /* Issues with detection when set to False */
       mirror_display(false),
-      no_gui(false)
+      no_gui(false),
+      ueye(false)
   {
   }
   TagDetectorParams params;
@@ -94,6 +94,7 @@ typedef struct GulliViewOptions {
   int frame_height;
   bool mirror_display;
   bool no_gui;
+  bool ueye;
 } GulliViewOptions;
 
 
@@ -153,7 +154,7 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
 
 GulliViewOptions parse_options(int argc, char** argv) {
   GulliViewOptions opts;
-  const char* options_str = "hDS:s:a:m:V:N:brnf:e:d:F:z:W:H:M";
+  const char* options_str = "hDS:s:a:m:V:N:brnf:e:d:F:z:W:H:M:u";
   int c;
   while ((c = getopt(argc, argv, options_str)) != -1) {
     switch (c) {
@@ -178,6 +179,7 @@ GulliViewOptions parse_options(int argc, char** argv) {
       case 'H': opts.frame_height = atoi(optarg); break;
       case 'M': opts.mirror_display = !opts.mirror_display; break;
       case 'n': opts.no_gui = 1; break;
+      case 'u': opts.ueye = true; break; 
       default:
         fprintf(stderr, "\n");
         print_usage(argv[0], stderr);
@@ -225,25 +227,41 @@ int main(int argc, char** argv) {
     //doing gracefull shutdown, prevents Linux USB system to crash
     signal (SIGINT, signal_handler);
 
-    //Using default cam
-    HIDS hCam = 0;
-    HIDS * hCamPtr = &hCam;
-    INT nRet = is_InitCamera(hCamPtr, NULL);
-    if(nRet == IS_SUCCESS){
-        cout << "init camera success" << endl;
-    }
-    //Color 8 channels???
-    nRet = is_SetColorMode(*hCamPtr, IS_CM_MONO8);
-    
+   cv::VideoCapture vc;
+   GulliViewOptions opts = parse_options(argc, argv);
+   TagFamily family(opts.family_str);
 
+   char* ppcImgMem;
+   int id;
+   HIDS hCam = 0;
+   HIDS *hCamPtr = &hCam;
+   INT nRet;
    //Buffer to hold tags and coordinates
    //char* buffer = new char[100];
+   if(opts.ueye){
+       nRet = is_InitCamera(hCamPtr, NULL);
+       if(nRet == IS_SUCCESS){
+           cout << "init camera success" << endl;
+       }
+       nRet = is_SetColorMode(*hCamPtr, IS_CM_MONO8);
+
+       nRet = is_SetExternalTrigger(*hCamPtr, IS_SET_TRIGGER_SOFTWARE);
+       if(nRet == IS_SUCCESS){
+           cout << "init colormode success" << endl;
+       }
+       }else{
+
+           vc.open(opts.device_num);
+
+           if (opts.frame_width && opts.frame_height) {
+
+      // Use uvcdynctrl to figure this out dynamically at some point?
+              vc.set(CV_CAP_PROP_FRAME_WIDTH, opts.frame_width);
+              vc.set(CV_CAP_PROP_FRAME_HEIGHT, opts.frame_height);
 
 
-
-   GulliViewOptions opts = parse_options(argc, argv);
-
-   TagFamily family(opts.family_str);
+           }
+     }   
 
    if (opts.error_fraction >= 0 && opts.error_fraction <= 1) {
       family.setErrorRecoveryFraction(opts.error_fraction);
@@ -253,23 +271,12 @@ int main(int argc, char** argv) {
    //std::cout << "family.errorRecoveryBits = " << family.errorRecoveryBits << "\n";
 
 
-   //cv::VideoCapture vc;
-   //vc.open(opts.device_num);
 
-   if (opts.frame_width && opts.frame_height) {
-
-      // Use uvcdynctrl to figure this out dynamically at some point?
-     // vc.set(CV_CAP_PROP_FRAME_WIDTH, opts.frame_width);
-     // vc.set(CV_CAP_PROP_FRAME_HEIGHT, opts.frame_height);
-
-
-   }
-
-   /*std::cout << "Set camera to resolution: "
+  /* std::cout << "Set camera to resolution: "
       << vc.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
       << vc.get(CV_CAP_PROP_FRAME_HEIGHT) << "\n";
-    */
-   cv::Mat frame;
+  */
+   cv::Mat frame(1024, 1280, CV_8UC1);
    cv::Point2d opticalCenter;
    /*
    vc >> frame;
@@ -277,7 +284,7 @@ int main(int argc, char** argv) {
       std::cerr << "no frames!\n";
       exit(1);
    }
-    */
+   */
    /* Optical Center of video capturing frame with X and Y coordinates */
    opticalCenter.x = frame.cols * 0.5;
    opticalCenter.y = frame.rows * 0.5;
@@ -301,22 +308,61 @@ int main(int argc, char** argv) {
 
    udp::socket socket(io_service);
    socket.open(udp::v4());
-    
-   //Pointer to the mem-loc of videodata
-   VOID* pMem;
+   VOID * pMem;
    uint32_t seq = 0;
    while (1) {
-      
-      //Capture the video, dont hold
-      nRet = is_CaptureVideo(*hCamPtr, IS_DONT_WAIT);
+      if(opts.ueye){
+      nRet = is_AllocImageMem (*hCamPtr, 1280, 1024, 8, &ppcImgMem, &id);
+      nRet = is_SetImageMem(hCam, ppcImgMem, id);
+      nRet = is_FreezeVideo(*hCamPtr, IS_WAIT);
+      if(nRet == IS_BAD_STRUCTURE_SIZE){
+          cout << "Bad structure" << endl;
+      }else if(nRet == IS_CANT_COMMUNICATE_WITH_DRIVER){
+          cout << "cant communciat with driver" << endl;
+      }else if(nRet == IS_CANT_OPEN_DEVICE){
+          cout << "cant open device" << endl;
+      }else if(nRet == IS_CAPTURE_RUNNING){
+          cout << "capture running" << endl;
+      }else if(nRet == IS_INVALID_BUFFER_SIZE){
+          cout << "invalid bufer size" << endl;
+      }else if(nRet == IS_INVALID_CAMERA_TYPE){
+          cout << "invalid camera type" << endl;
+      }else if(nRet == IS_INVALID_CAMERA_HANDLE){
+          cout << "invalid camera handel" << endl;
+      }else if(nRet == IS_INVALID_MEMORY_POINTER){
+          cout << "invalid mem ptr" << endl;
+      }else if(nRet == IS_INVALID_PARAMETER){
+          cout << "invalid parms" << endl;
+      }else if(nRet == IS_IO_REQUEST_FAILED){
+          cout << "io req failed" << endl;
+      }else if(nRet == IS_NO_ACTIVE_IMG_MEM){
+          cout << "no active img mem" << endl;
+      }else if(nRet == IS_NOT_CALIBRATED){
+          cout << "not calibrated" << endl;
+      }else if(nRet == IS_NOT_SUPPORTED){
+          cout << "not supported" << endl;
+      }else if(nRet == IS_OUT_OF_MEMORY){
+          cout << "out of mem" << endl;
+      }
 
-      //Get the memorylocation of the video dota
-      nRet = is_GetImageMem(*hCamPtr, &pMem);  
 
-      //Copy the data to the openCV frame loocation
-      //*Size of data equal to framesize??
-      memcpy(frame.ptr(), pMem, opts.frame_width*opts.frame_height);
 
+
+
+
+
+
+
+
+
+      nRet = is_GetImageMem(*hCamPtr, &pMem);
+/*      if(nRet == IS_SUCCESS){
+          cout << "Camera getImage success" << endl;
+      }*/
+      memcpy(frame.ptr(), pMem, frame.cols * frame.rows);
+      }else{
+        vc >> frame;
+      }
       ptime start;
       start = boost::posix_time::microsec_clock::local_time();
       //std::cout << "Start Time " << start << "\n";
@@ -691,7 +737,9 @@ int main(int argc, char** argv) {
    }
    /* Report times of position? */
    detector.reportTimers();
-
+   if(opts.ueye){
+       is_ExitCamera(*hCamPtr);
+   }
    return 0;
 
 

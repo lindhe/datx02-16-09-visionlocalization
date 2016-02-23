@@ -12,10 +12,12 @@ add_library(apriltags
 )
 
 set(AT_LIBS apriltags ${OPENCV_LDFLAGS})
-
+include_directories(/usr/include)
+find_library(UEYE_LIBRARIES ueye_api)
 add_executable(GulliView GulliView.cpp)
 target_link_libraries(GulliView ${AT_LIBS})
 target_link_libraries(GulliView ${Boost_LIBRARIES})
+target_link_libraries(GulliView ${UEYE_LIBRARIES})
 
 # -- Client used for testing for UDP transfer. Not needed
 # for final program ---
