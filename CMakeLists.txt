@@ -60,3 +60,5 @@ set(CMAKE_CXX_FLAGS_RELEASE "-Ofast -march=native -funroll-loops -DNDEBUG")
 
 add_subdirectory(src)
 
+include_directories(/usr/include/)
+target_link_libraries(/usr/lib/libueye_api64.so)

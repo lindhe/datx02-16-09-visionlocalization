@@ -40,10 +40,9 @@
 #include <boost/chrono/round.hpp>
 
 #include "CameraUtil.h"
-
 #include "ueye.h"
 
-#define DEFAULT_TAG_FAMILY "Tag36h11"
+#define DEFAULT_TAG_FAMILY "Tag16h5"
 using namespace std;
 using helper::ImageSource;
 using boost::asio::ip::udp;
@@ -75,7 +74,6 @@ typedef struct GulliViewOptions {
       family_str(DEFAULT_TAG_FAMILY),
       error_fraction(1),
       device_num(1),
-      ueye_num(1),
       focal_length(500),
       tag_size(0.1905),
       frame_width(0),
@@ -90,7 +88,6 @@ typedef struct GulliViewOptions {
   std::string family_str;
   double error_fraction;
   int device_num;
-  int ueye_num;
   double focal_length;
   double tag_size;
   int frame_width;
@@ -111,7 +108,6 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
  -h              Show this help message.\n\
  -f FAMILY       Look for the given tag family (default \"%s\")\n\
  -d DEVICE       Set camera device number (default %d)\n\
- -U UEYE         For iDS uEye camera, set device number (defualt 1)\n\
  -z SIZE         Set the tag size in meters (default %f)\n\
  -W WIDTH        Set the camera image width in pixels\n\
  -H HEIGHT       Set the camera image height in pixels\n\
@@ -157,7 +153,7 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
 
 GulliViewOptions parse_options(int argc, char** argv) {
   GulliViewOptions opts;
-  const char* options_str = "hDS:s:a:m:V:N:brnf:e:d:U:F:z:W:H:M";
+  const char* options_str = "hDS:s:a:m:V:N:brnf:e:d:F:z:W:H:M";
   int c;
   while ((c = getopt(argc, argv, options_str)) != -1) {
     switch (c) {
@@ -176,7 +172,6 @@ GulliViewOptions parse_options(int argc, char** argv) {
       case 'f': opts.family_str = optarg; break;
       //case 'e': opts.error_fraction = atof(optarg); break;
       case 'd': opts.device_num = atoi(optarg); break;
-      case 'U': opts.ueye_num = atoi(optarg); break;
       //case 'F': opts.focal_length = atof(optarg); break;
       case 'z': opts.tag_size = atof(optarg); break;
       case 'W': opts.frame_width = atoi(optarg); break;
@@ -230,9 +225,21 @@ int main(int argc, char** argv) {
     //doing gracefull shutdown, prevents Linux USB system to crash
     signal (SIGINT, signal_handler);
 
+    //Using default cam
+    HIDS hCam = 0;
+    HIDS * hCamPtr = &hCam;
+    INT nRet = is_InitCamera(hCamPtr, NULL);
+    if(nRet == IS_SUCCESS){
+        cout << "init camera success" << endl;
+    }
+    //Color 8 channels???
+    nRet = is_SetColorMode(*hCamPtr, IS_CM_MONO8);
+    
 
    //Buffer to hold tags and coordinates
    //char* buffer = new char[100];
+
+
 
    GulliViewOptions opts = parse_options(argc, argv);
 
@@ -246,38 +253,31 @@ int main(int argc, char** argv) {
    //std::cout << "family.errorRecoveryBits = " << family.errorRecoveryBits << "\n";
 
 
-   std::cout << "Eh... Jahaja\n";
-
-   /* INT andreas = is_InitCamera(1,0); */
-
-   cv::VideoCapture vc;
-   /* vc.open(opts.device_num); */
-
-   const string filename = "cats.mkv";
-   vc.open(filename);
+   //cv::VideoCapture vc;
+   //vc.open(opts.device_num);
 
    if (opts.frame_width && opts.frame_height) {
 
       // Use uvcdynctrl to figure this out dynamically at some point?
-      vc.set(CV_CAP_PROP_FRAME_WIDTH, opts.frame_width);
-      vc.set(CV_CAP_PROP_FRAME_HEIGHT, opts.frame_height);
+     // vc.set(CV_CAP_PROP_FRAME_WIDTH, opts.frame_width);
+     // vc.set(CV_CAP_PROP_FRAME_HEIGHT, opts.frame_height);
 
 
    }
 
-   std::cout << "Set camera to resolution: "
+   /*std::cout << "Set camera to resolution: "
       << vc.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
       << vc.get(CV_CAP_PROP_FRAME_HEIGHT) << "\n";
-
+    */
    cv::Mat frame;
    cv::Point2d opticalCenter;
-
+   /*
    vc >> frame;
    if (frame.empty()) {
       std::cerr << "no frames!\n";
       exit(1);
    }
-
+    */
    /* Optical Center of video capturing frame with X and Y coordinates */
    opticalCenter.x = frame.cols * 0.5;
    opticalCenter.y = frame.rows * 0.5;
@@ -301,11 +301,22 @@ int main(int argc, char** argv) {
 
    udp::socket socket(io_service);
    socket.open(udp::v4());
-
+    
+   //Pointer to the mem-loc of videodata
+   VOID* pMem;
    uint32_t seq = 0;
    while (1) {
+      
+      //Capture the video, dont hold
+      nRet = is_CaptureVideo(*hCamPtr, IS_DONT_WAIT);
 
-      vc >> frame;
+      //Get the memorylocation of the video dota
+      nRet = is_GetImageMem(*hCamPtr, &pMem);  
+
+      //Copy the data to the openCV frame loocation
+      //*Size of data equal to framesize??
+      memcpy(frame.ptr(), pMem, opts.frame_width*opts.frame_height);
+
       ptime start;
       start = boost::posix_time::microsec_clock::local_time();
       //std::cout << "Start Time " << start << "\n";
