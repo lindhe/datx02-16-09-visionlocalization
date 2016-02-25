@@ -113,7 +113,8 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
  -W WIDTH        Set the camera image width in pixels\n\
  -H HEIGHT       Set the camera image height in pixels\n\
  -M              Toggle display mirroring\n\
- -n              No gui\n",
+ -n              No gui\n\
+ -u              Ueye camera\n",
           tool_name,
 	  /* Options removed that are not needed */
 	  /* Can be added later for further functionality */
@@ -238,6 +239,7 @@ int main(int argc, char** argv) {
    INT nRet;
    VOID * pMem;
    double newFPS;
+
    //Buffer to hold tags and coordinates
    //char* buffer = new char[100];
    if(opts.ueye){
@@ -283,6 +285,11 @@ int main(int argc, char** argv) {
    nRet = is_SetFrameRate(*hCamPtr, 60.0, &newFPS);
    nRet = is_CaptureVideo(*hCamPtr, IS_DONT_WAIT);
    nRet = is_GetImageMem(*hCamPtr, &pMem);
+   UINT nPixelClock;
+ 
+// Get current pixel clock
+   nRet = is_PixelClock(hCam, IS_PIXELCLOCK_CMD_GET, (void*)&nPixelClock, sizeof(nPixelClock));
+//   cout << "This is the currernt pixel clock: " << nPixelClock << endl;
    cv::Mat frame(1024, 1280, CV_8UC1, (uchar *) pMem);
    cv::Point2d opticalCenter;
    /*
@@ -316,6 +323,11 @@ int main(int argc, char** argv) {
    udp::socket socket(io_service);
    socket.open(udp::v4());
    uint32_t seq = 0;
+
+   while (1) {
+      if(opts.ueye){
+         /* nRet = is_GetImageMem(*hCamPtr, &pMem);
+            
       if(nRet == IS_BAD_STRUCTURE_SIZE){
           cout << "Bad structure" << endl;
       }else if(nRet == IS_CANT_COMMUNICATE_WITH_DRIVER){
@@ -346,16 +358,15 @@ int main(int argc, char** argv) {
           cout << "out of mem" << endl;
       }
 
-
-   while (1) {
-      if(opts.ueye){
-    //  nRet = is_GetImageMem(*hCamPtr, &pMem);
-/*      if(nRet == IS_SUCCESS){
-          cout << "Camera getImage success" << endl;
-      }*/
-      //memcpy(frame.ptr(), pMem, frame.cols * frame.rows);
+     double frameRate;
+          if(nRet == IS_SUCCESS){
+              cout << "Camera getImage success" << endl;
+          }
+          memcpy(frame.ptr(), pMem, frame.cols * frame.rows);
+          is_GetFramesPerSecond (hCam, &frameRate);
+          cout << "The framerate is: " << frameRate << endl;*/
       }else{
-        vc >> frame;
+          vc >> frame;
       }
       ptime start;
       start = boost::posix_time::microsec_clock::local_time();
