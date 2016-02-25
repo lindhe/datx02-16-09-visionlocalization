@@ -232,10 +232,12 @@ int main(int argc, char** argv) {
    TagFamily family(opts.family_str);
 
    char* ppcImgMem;
-   int id;
+   INT id;
    HIDS hCam = 0;
    HIDS *hCamPtr = &hCam;
    INT nRet;
+   VOID * pMem;
+   double newFPS;
    //Buffer to hold tags and coordinates
    //char* buffer = new char[100];
    if(opts.ueye){
@@ -245,7 +247,7 @@ int main(int argc, char** argv) {
        }
        nRet = is_SetColorMode(*hCamPtr, IS_CM_MONO8);
 
-       nRet = is_SetExternalTrigger(*hCamPtr, IS_SET_TRIGGER_SOFTWARE);
+//       nRet = is_SetExternalTrigger(*hCamPtr, IS_SET_TRIGGER_SOFTWARE);
        if(nRet == IS_SUCCESS){
            cout << "init colormode success" << endl;
        }
@@ -276,7 +278,12 @@ int main(int argc, char** argv) {
       << vc.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
       << vc.get(CV_CAP_PROP_FRAME_HEIGHT) << "\n";
   */
-   cv::Mat frame(1024, 1280, CV_8UC1);
+   nRet = is_AllocImageMem (*hCamPtr, 1280, 1024, 8, &ppcImgMem, &id);
+   nRet = is_SetImageMem(hCam, ppcImgMem, id);
+   nRet = is_SetFrameRate(*hCamPtr, 60.0, &newFPS);
+   nRet = is_CaptureVideo(*hCamPtr, IS_DONT_WAIT);
+   nRet = is_GetImageMem(*hCamPtr, &pMem);
+   cv::Mat frame(1024, 1280, CV_8UC1, (uchar *) pMem);
    cv::Point2d opticalCenter;
    /*
    vc >> frame;
@@ -308,13 +315,7 @@ int main(int argc, char** argv) {
 
    udp::socket socket(io_service);
    socket.open(udp::v4());
-   VOID * pMem;
    uint32_t seq = 0;
-   while (1) {
-      if(opts.ueye){
-      nRet = is_AllocImageMem (*hCamPtr, 1280, 1024, 8, &ppcImgMem, &id);
-      nRet = is_SetImageMem(hCam, ppcImgMem, id);
-      nRet = is_FreezeVideo(*hCamPtr, IS_WAIT);
       if(nRet == IS_BAD_STRUCTURE_SIZE){
           cout << "Bad structure" << endl;
       }else if(nRet == IS_CANT_COMMUNICATE_WITH_DRIVER){
@@ -346,20 +347,13 @@ int main(int argc, char** argv) {
       }
 
 
-
-
-
-
-
-
-
-
-
-      nRet = is_GetImageMem(*hCamPtr, &pMem);
+   while (1) {
+      if(opts.ueye){
+    //  nRet = is_GetImageMem(*hCamPtr, &pMem);
 /*      if(nRet == IS_SUCCESS){
           cout << "Camera getImage success" << endl;
       }*/
-      memcpy(frame.ptr(), pMem, frame.cols * frame.rows);
+      //memcpy(frame.ptr(), pMem, frame.cols * frame.rows);
       }else{
         vc >> frame;
       }
@@ -738,7 +732,8 @@ int main(int argc, char** argv) {
    /* Report times of position? */
    detector.reportTimers();
    if(opts.ueye){
-       is_ExitCamera(*hCamPtr);
+       nRet = is_FreeImageMem (*hCamPtr, ppcImgMem, id);
+       nRet = is_ExitCamera(*hCamPtr);
    }
    return 0;
 
