@@ -73,7 +73,7 @@ typedef struct GulliViewOptions {
       family_str(DEFAULT_TAG_FAMILY),
       error_fraction(1),
       device_num(1),
-      focal_length(500),
+      focal_length(480),
       tag_size(0.1905),
       frame_width(0),
       frame_height(0),
@@ -317,7 +317,7 @@ int main(int argc, char** argv) {
    int cvPose = 0;
    boost::asio::io_service io_service;
    udp::resolver resolver(io_service);
-   udp::resolver::query query(udp::v4(), "127.0.0.1", "daytime");
+   udp::resolver::query query(udp::v4(), "192.168.2.45", "daytime");
    udp::endpoint receiver_endpoint = *resolver.resolve(query);
 
    udp::socket socket(io_service);
@@ -399,12 +399,13 @@ int main(int argc, char** argv) {
          double s = opts.tag_size;
          double ss = 0.5*s;
          /* sz changed to negative value to flip cube */
-         double sz = -s;
+//         double sz = -s;
+         double sz = -0.32;
+//         enum { npoints = 8, nedges = 12 };
 
-         enum { npoints = 8, nedges = 12 };
-
+         enum { npoints = 6, nedges = 5 };
          /* Cube fliped by changing sz to negative */
-         cv::Point3d src[npoints] = {
+/*            cv::Point3d src[npoints] = {
             cv::Point3d(-ss, -ss, 0),
             cv::Point3d( ss, -ss, 0),
             cv::Point3d( ss,  ss, 0),
@@ -413,6 +414,15 @@ int main(int argc, char** argv) {
             cv::Point3d( ss, -ss, sz),
             cv::Point3d( ss,  ss, sz),
             cv::Point3d(-ss,  ss, sz),
+         };*/
+
+         cv::Point3d src[npoints] = {
+            cv::Point3d(-ss, -ss, 0),
+            cv::Point3d(ss,  -ss, 0),
+            cv::Point3d(ss,   ss, 0),
+            cv::Point3d(-ss,  ss, 0),
+            cv::Point3d(0,     0, 0),
+            cv::Point3d(0,     0, sz),
          };
 
 
@@ -423,9 +433,9 @@ int main(int argc, char** argv) {
             { 1, 2 },
             { 2, 3 },
             { 3, 0 },
-
+            { 4, 5 }
             /* Comment out two matrices below for 2D box */
-            { 4, 5 },
+/*            { 4, 5 },
             { 5, 6 },
             { 6, 7 },
             { 7, 4 },
@@ -434,7 +444,7 @@ int main(int argc, char** argv) {
             { 1, 5 },
             { 2, 6 },
             { 3, 7 }
-
+*/
          };
 
          cv::Point2d dst[npoints];
@@ -578,11 +588,51 @@ int main(int argc, char** argv) {
 
          for (size_t i=0; i<detections.size(); ++i) {
             TagDetection &dd = detections[i];
+               cv::Mat r, t;
+
+               if (cvPose) {
+
+
+                  CameraUtil::homographyToPoseCV(f, f, s,
+                        detections[i].homography,
+                        r, t);
+
+               } else {
+
+                  cv::Mat_<double> M =
+                     CameraUtil::homographyToPose(f, f, s,
+                           detections[i].homography,
+                           false);
+
+                  cv::Mat_<double> R = M.rowRange(0,3).colRange(0, 3);
+
+                  t = M.rowRange(0,3).col(3);
+
+                  cv::Rodrigues(R, r);
+
+               }
+
+               cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
+
+               /* Used to draw lines on video image */
+               int lines = dd.id==4? nedges:(nedges-1);
+               for (int j=0; j<lines; ++j) {
+                  cv::line(show,
+                        dstmat(edges[j][0],0),
+                        dstmat(edges[j][1],0),
+                        cvPose ? CV_RGB(0,0,255) : CV_RGB(255,0,0),
+                        1, CV_AA);
+
+               }
             if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3) {
                //boost::chrono::nanoseconds start;
-
-               double x_new = newDetections[i].x;
-               double y_new = newDetections[i].y;
+                std::vector<at::Point>  prevPointDetections(1);
+                prevPointDetections[0] = at::Point(dstmat[npoints-1]->x, dstmat[npoints-1]->y);
+                std::vector<at::Point>  newPointDetections(1);
+                perspectiveTransform(prevPointDetections, newPointDetections, pts);
+                //cout << "New coordinates: " << 1000*newPointDetections[0].x << ", " << 1000*newPointDetections[0].y << endl; 
+               double x_new = newPointDetections[0].x;//newDetections[i].x;
+               double y_new = newPointDetections[0].y;//newDetections[i].y;
 
 #if 0
                double x_new = f1*(dd.cxy.x-a1) + f2*(dd.cxy.y-a2);
@@ -670,47 +720,6 @@ int main(int argc, char** argv) {
 
             //std::cout << newOrgX << "\n";
 
-            if (1) {
-
-               cv::Mat r, t;
-
-               if (cvPose) {
-
-
-                  CameraUtil::homographyToPoseCV(f, f, s,
-                        detections[i].homography,
-                        r, t);
-
-               } else {
-
-                  cv::Mat_<double> M =
-                     CameraUtil::homographyToPose(f, f, s,
-                           detections[i].homography,
-                           false);
-
-                  cv::Mat_<double> R = M.rowRange(0,3).colRange(0, 3);
-
-                  t = M.rowRange(0,3).col(3);
-
-                  cv::Rodrigues(R, r);
-
-               }
-
-               cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
-
-               /* Used to draw lines on video image */
-               for (int j=0; j<nedges; ++j) {
-                  cv::line(show,
-                        dstmat(edges[j][0],0),
-                        dstmat(edges[j][1],0),
-                        cvPose ? CV_RGB(0,0,255) : CV_RGB(255,0,0),
-                        1, CV_AA);
-
-               }
-
-            }
-
-         }
 
          index = len_index;
          recv_buf[index++] = len << 24;
@@ -719,6 +728,10 @@ int main(int argc, char** argv) {
          recv_buf[index++] = len;
          socket.send_to(boost::asio::buffer(recv_buf), receiver_endpoint);
          ++seq;
+
+         }
+
+
 
       }
 
