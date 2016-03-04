@@ -24,6 +24,8 @@
 #include <cstdlib>
 #include <string>
 #include <signal.h>
+#include <numeric>
+#include <numeric>
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
@@ -41,6 +43,7 @@
 #include "ueye.h"
 #include "CameraUtil.h"
 
+#define PI 3.14159265
 #define DEFAULT_TAG_FAMILY "Tag16h5"
 using namespace std;
 using helper::ImageSource;
@@ -64,6 +67,8 @@ double c1 = 0.0;
 double c2 = 0.0;
 double d1 = 0.0;
 double d2 = 0.0;
+double dir_x = 0;
+double dir_y = 0;
 
 at::Mat pts;
 
@@ -267,7 +272,7 @@ int main(int argc, char** argv) {
            }
      }   
 
-   if (opts.error_fraction >= 0 && opts.error_fraction <= 1) {
+   if (opts.error_fraction >= 1 && opts.error_fraction <= 1) {
       family.setErrorRecoveryFraction(opts.error_fraction);
    }
 
@@ -317,7 +322,7 @@ int main(int argc, char** argv) {
    int cvPose = 0;
    boost::asio::io_service io_service;
    udp::resolver resolver(io_service);
-   udp::resolver::query query(udp::v4(), "192.168.2.45", "daytime");
+   udp::resolver::query query(udp::v4(), "127.0.0.1", "daytime");
    udp::endpoint receiver_endpoint = *resolver.resolve(query);
 
    udp::socket socket(io_service);
@@ -543,7 +548,7 @@ int main(int argc, char** argv) {
                d2 = dd.cxy.y;
                //            d1 = d1-a1;
                //            d2 = d2-a2;
-            }
+            } 
          }
 
          //cv::Mat edited;
@@ -569,7 +574,7 @@ int main(int argc, char** argv) {
          source_points[3] = at::Point(c1, c2);
 
          //std::cout << "One: " << one << "\n";
-
+         
          dest_points[0] =  at::Point(0.0, 0.0);
          dest_points[1] =  at::Point(1.0, 0.0);
          dest_points[2] =  at::Point(1.0, 1.0);
@@ -615,7 +620,7 @@ int main(int argc, char** argv) {
                cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
 
                /* Used to draw lines on video image */
-               int lines = dd.id==4? nedges:(nedges-1);
+               int lines = dd.id==5? nedges:(nedges-1);
                for (int j=0; j<lines; ++j) {
                   cv::line(show,
                         dstmat(edges[j][0],0),
@@ -624,13 +629,41 @@ int main(int argc, char** argv) {
                         1, CV_AA);
 
                }
-            if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3) {
+            if(dd.id == 4){
+                dir_x = newDetections[i].x;
+                dir_y = newDetections[i].y;
+               // Print out Tag ID in center of Tag
+               putText(frame, helper::num2str(dd.id),
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,250,0), 2, CV_AA);
+            }
+            if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3 and dd.id != 4) {
                //boost::chrono::nanoseconds start;
+
+                std::vector<at::Point>  frontDirection(1);
+                std::vector<double>  refDirection(2);
+                refDirection[0] = 1;
+                refDirection[1] = 0;
+                frontDirection[0] = at::Point(newDetections[i].x-dir_x, newDetections[i].y-dir_y);
+
+                double length = sqrt(pow(frontDirection[0].x,2)+pow(frontDirection[0].y,2));
+                std::vector<double> point(2);
+                point[0] = frontDirection[0].x/length;
+                point[1] = frontDirection[0].y/length;
+                double dotproduct = std::inner_product(point.begin(), point.end(),refDirection.begin(), 0.0);
+                double direction = acos(dotproduct) * 180.0 / PI;   
+
+                if(newDetections[i].y < dir_y){
+                    direction = 360.0-direction;
+                }
+                //cout << "The dotproduct is: " << dotproduct << ", and angle in deg. " << direction <<  endl; 
+
                 std::vector<at::Point>  prevPointDetections(1);
                 prevPointDetections[0] = at::Point(dstmat[npoints-1]->x, dstmat[npoints-1]->y);
                 std::vector<at::Point>  newPointDetections(1);
                 perspectiveTransform(prevPointDetections, newPointDetections, pts);
-                //cout << "New coordinates: " << 1000*newPointDetections[0].x << ", " << 1000*newPointDetections[0].y << endl; 
+
                double x_new = newPointDetections[0].x;//newDetections[i].x;
                double y_new = newPointDetections[0].y;//newDetections[i].y;
 
@@ -693,13 +726,13 @@ int main(int argc, char** argv) {
                recv_buf[index++] = y_coord >> 16;
                recv_buf[index++] = y_coord >> 8;
                recv_buf[index++] = y_coord;
-               int32_t heading = 0; //TODO
+               int32_t heading   = (int32_t) direction;
                recv_buf[index++] = heading >> 24;
                recv_buf[index++] = heading >> 16;
                recv_buf[index++] = heading >> 8;
                recv_buf[index++] = heading;
                ++len;
-               std::cout << dd.id << " " << x_coord << " " << y_coord << std::endl;
+               std::cout << dd.id << " " << x_coord << " " << y_coord << " " << heading <<  std::endl;
 
                //		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
                //		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::microsec_clock::local_time()) + " [" +  helper::num2str(start) + "]";
