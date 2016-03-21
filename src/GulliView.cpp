@@ -285,17 +285,27 @@ int main(int argc, char** argv) {
       << vc.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
       << vc.get(CV_CAP_PROP_FRAME_HEIGHT) << "\n";
   */
+//   double on = 1;
+//   double empty;
+   double newEXP;
    nRet = is_AllocImageMem (*hCamPtr, 1280, 1024, 8, &ppcImgMem, &id);
    nRet = is_SetImageMem(hCam, ppcImgMem, id);
-   nRet = is_SetFrameRate(*hCamPtr, 60.0, &newFPS);
+//   nRet = is_SetAutoParameter(hCam, IS_SET_ENABLE_AUTO_WHITEBALANCE, &on, &empty);
+//   nRet = is_SetAutoParameter(hCam, IS_SET_ENABLE_AUTO_GAIN, &on, &empty);
+   nRet = is_SetFrameRate(*hCamPtr, 57.17, &newFPS);
+//   nRet = is_SetExposureTime(hCam, 17.48, &newEXP);
    nRet = is_CaptureVideo(*hCamPtr, IS_DONT_WAIT);
    nRet = is_GetImageMem(*hCamPtr, &pMem);
    UINT nPixelClock;
  
 // Get current pixel clock
-   nRet = is_PixelClock(hCam, IS_PIXELCLOCK_CMD_GET, (void*)&nPixelClock, sizeof(nPixelClock));
+//   nRet = is_PixelClock(hCam, IS_PIXELCLOCK_CMD_GET, (void*)&nPixelClock, sizeof(nPixelClock));
+  
+//   nRet = is_SetPixelClock(hCam, 84);
 //   cout << "This is the currernt pixel clock: " << nPixelClock << endl;
-   cv::Mat frame(1024, 1280, CV_8UC1, (uchar *) pMem);
+   //cv::Mat frame(1024, 1280, CV_8UC1, (uchar *) pMem);
+
+   cv::Mat frame(1024, 1280, CV_8UC1);
    cv::Point2d opticalCenter;
    /*
    vc >> frame;
@@ -322,189 +332,84 @@ int main(int argc, char** argv) {
    int cvPose = 0;
    boost::asio::io_service io_service;
    udp::resolver resolver(io_service);
-   udp::resolver::query query(udp::v4(), "127.0.0.1", "daytime");
+   udp::resolver::query query(udp::v4(), "192.168.2.42", "daytime");
    udp::endpoint receiver_endpoint = *resolver.resolve(query);
 
    udp::socket socket(io_service);
    socket.open(udp::v4());
    uint32_t seq = 0;
 
-         double s = opts.tag_size;
-         double ss = 0.5*s;
-         /* sz changed to negative value to flip cube */
-//         double sz = -s;
-         double sz = -0.32;
-//         enum { npoints = 8, nedges = 12 };
+   double s = opts.tag_size;
+   double ss = 0.5*s;
+   /* sz changed to negative value to flip cube */
+   //         double sz = -s;
+   double sz = -0.32;
+   //         enum { npoints = 8, nedges = 12 };
 
-         enum { npoints = 6, nedges = 5 };
-         /* Cube fliped by changing sz to negative */
-/*            cv::Point3d src[npoints] = {
-            cv::Point3d(-ss, -ss, 0),
-            cv::Point3d( ss, -ss, 0),
-            cv::Point3d( ss,  ss, 0),
-            cv::Point3d(-ss,  ss, 0),
-            cv::Point3d(-ss, -ss, sz),
-            cv::Point3d( ss, -ss, sz),
-            cv::Point3d( ss,  ss, sz),
-            cv::Point3d(-ss,  ss, sz),
-         };*/
+   enum { npoints = 6, nedges = 5 };
+   /* Cube fliped by changing sz to negative */
+   /*            cv::Point3d src[npoints] = {
+                 cv::Point3d(-ss, -ss, 0),
+                 cv::Point3d( ss, -ss, 0),
+                 cv::Point3d( ss,  ss, 0),
+                 cv::Point3d(-ss,  ss, 0),
+                 cv::Point3d(-ss, -ss, sz),
+                 cv::Point3d( ss, -ss, sz),
+                 cv::Point3d( ss,  ss, sz),
+                 cv::Point3d(-ss,  ss, sz),
+                 };*/
 
-         cv::Point3d src[npoints] = {
-            cv::Point3d(-ss, -ss, 0),
-            cv::Point3d(ss,  -ss, 0),
-            cv::Point3d(ss,   ss, 0),
-            cv::Point3d(-ss,  ss, 0),
-            cv::Point3d(0,     0, 0),
-            cv::Point3d(0,     0, -sz),
-         };
-
-
-         /* Possible edges of the box created. Come back to THIS*/
-         int edges[nedges][2] = {
-
-            { 0, 1 },
-            { 1, 2 },
-            { 2, 3 },
-            { 3, 0 },
-            { 4, 5 }
-            /* Comment out two matrices below for 2D box */
-/*            { 4, 5 },
-            { 5, 6 },
-            { 6, 7 },
-            { 7, 4 },
-
-            { 0, 4 },
-            { 1, 5 },
-            { 2, 6 },
-            { 3, 7 }
-*/
-         };
-
-         cv::Point2d dst_vec[npoints];
-
-         double f = opts.focal_length;
-         /* Optical centers, possible 2D config*/
-         double K[9] = {
-            f, 0, opticalCenter.x,
-            0, f, opticalCenter.y,
-            0, 0, 1
-         };
-
-         cv::Mat_<cv::Point3d> srcmat(npoints, 1, src);
-         cv::Mat_<cv::Point2d> dstmat(npoints, 1, dst_vec);
-
-         cv::Mat_<double>      Kmat(3, 3, K);
-
-         cv::Mat_<double>      distCoeffs = cv::Mat_<double>::zeros(4,1);
-         detector.process(frame, opticalCenter, detections);
-         cout << "Detections size: " << detections.size() << endl;
-         for (size_t i=0; i<detections.size(); ++i) {
-            //Add code in order to copy and send array
-            //Static buffer
-            TagDetection &dd = detections[i];
-               cv::Mat r, t;
-
-               if (cvPose) {
+   cv::Point3d src[npoints] = {
+       cv::Point3d(-ss, -ss, 0),
+       cv::Point3d(ss,  -ss, 0),
+       cv::Point3d(ss,   ss, 0),
+       cv::Point3d(-ss,  ss, 0),
+       cv::Point3d(0,     0, 0),
+       cv::Point3d(0,     0, -sz),
+   };
 
 
-                  CameraUtil::homographyToPoseCV(f, f, s,
-                        detections[i].homography,
-                        r, t);
+   /* Possible edges of the box created. Come back to THIS*/
+   int edges[nedges][2] = {
 
-               } else {
+       { 0, 1 },
+       { 1, 2 },
+       { 2, 3 },
+       { 3, 0 },
+       { 4, 5 }
+       /* Comment out two matrices below for 2D box */
+       /*            { 4, 5 },
+                     { 5, 6 },
+                     { 6, 7 },
+                     { 7, 4 },
 
-                  cv::Mat_<double> M =
-                     CameraUtil::homographyToPose(f, f, s,
-                           detections[i].homography,
-                           false);
+                     { 0, 4 },
+                     { 1, 5 },
+                     { 2, 6 },
+                     { 3, 7 }
+                     */
+   };
 
-                  cv::Mat_<double> R = M.rowRange(0,3).colRange(0, 3);
+   cv::Point2d dst_vec[npoints];
 
-                  t = M.rowRange(0,3).col(3);
+   double f = opts.focal_length;
+   /* Optical centers, possible 2D config*/
+   double K[9] = {
+       f, 0, opticalCenter.x,
+       0, f, opticalCenter.y,
+       0, 0, 1
+   };
 
-                  cv::Rodrigues(R, r);
+   cv::Mat_<cv::Point3d> srcmat(npoints, 1, src);
+   cv::Mat_<cv::Point2d> dstmat(npoints, 1, dst_vec);
 
-               }
+   cv::Mat_<double>      Kmat(3, 3, K);
 
-               cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
-            // Origin of axis detected
-            if (dd.id == 0) {
-               putText(frame, "0,0",
-                     cv::Point(dd.cxy.x,dd.cxy.y),
-                     CV_FONT_NORMAL,
-                     1.0, cvScalar(0,0,250), 2, CV_AA);
-               a1 = dstmat[npoints-1]->x; // dd.cxy.x;
-               a2 = dstmat[npoints-1]->y; // dd.cxy.y;
-               cout << "prev: " << a1 << " " << a2 << " vs " << dstmat[npoints-1]->x  << " " << dstmat[npoints-1]->y << endl; 
-               // New X-Axis detected
-            } else if (dd.id == 1) {
-               putText(frame, "X Axis",
-                     cv::Point(dd.cxy.x,dd.cxy.y),
-                     CV_FONT_NORMAL,
-                     1.0, cvScalar(0,0,250), 2, CV_AA);
-               b1 = dstmat[npoints-1]->x; // dd.cxy.x;
-               b2 = dstmat[npoints-1]->y; // dd.cxy.y;
-               cout << "prev: " << b1 << " " << b2 << " vs " << dstmat[npoints-1]->x  << " " << dstmat[npoints-1]->y << endl; 
-               //            b1 = b1-a1;
-               //            b2 = b2-a2;
-               // New Y-Axis detected
-            } else if (dd.id == 2) {
-               putText(frame, "Y Axis",
-                     cv::Point(dd.cxy.x,dd.cxy.y),
-                     CV_FONT_NORMAL,
-                     1.0, cvScalar(0,0,250), 2, CV_AA);
-               c1 = dstmat[npoints-1]->x; // dd.cxy.x;
-               c2 = dstmat[npoints-1]->y; // dd.cxy.y;
-               cout << "prev: " << c1 << " " << c2 << " vs " << dstmat[npoints-1]->x  << " " << dstmat[npoints-1]->y << endl; 
-               //            c1 = c1-a1;
-               //            c2 = c2-a2;
-               // Quad Angle used for perspective transform
-            } else if (dd.id == 3) {
-               putText(frame, "Quad Axis",
-                     cv::Point(dd.cxy.x,dd.cxy.y),
-                     CV_FONT_NORMAL,
-                     1.0, cvScalar(0,0,250), 2, CV_AA);
-               d1 = dstmat[npoints-1]->x; // dd.cxy.x;
-               d2 = dstmat[npoints-1]->y; // dd.cxy.y;
-               cout << "prev: " << d1 << " " << d2 << " vs " << dstmat[npoints-1]->x  << " " << dstmat[npoints-1]->y << endl; 
-               //            d1 = d1-a1;
-               //            d2 = d2-a2;
-            } 
-         }
-         //cv::Mat edited;
-         //cv::Mat dist;
-         //cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
-
-         //cv::imshow( "Display window" , edited );
-         // Other ID's and coordinates detected
-         //double det = 1.0/(b1*c2-c1*b2);
-         //std::cout<<"1/det "<<det<<"\n";
-         //double f1 = det*c2;
-         //double f2 = det*(-c1);
-         //double f3 = det*(-b2);
-         //double f4 = det*b1;
-
-         at::Point source_points_vec[4];
-         at::Point dest_points_vec[4];
-
-
-         source_points_vec[0] = at::Point(a1, a2);
-         source_points_vec[1] = at::Point(b1, b2);
-         source_points_vec[2] = at::Point(d1, d2);
-         source_points_vec[3] = at::Point(c1, c2);
-
-         //std::cout << "One: " << one << "\n";
-         
-         dest_points_vec[0] =  at::Point(0.0, 0.0);
-         dest_points_vec[1] =  at::Point(1.0, 0.0);
-         dest_points_vec[2] =  at::Point(1.0, 1.0);
-         dest_points_vec[3] =  at::Point(0.0, 1.0);
-
-         pts = getPerspectiveTransform(source_points_vec, dest_points_vec);
+   cv::Mat_<double>      distCoeffs = cv::Mat_<double>::zeros(4,1);
    while (1) {
       if(opts.ueye){
-         /* nRet = is_GetImageMem(*hCamPtr, &pMem);
-            
+          nRet = is_GetImageMem(*hCamPtr, &pMem);
+ /*           
       if(nRet == IS_BAD_STRUCTURE_SIZE){
           cout << "Bad structure" << endl;
       }else if(nRet == IS_CANT_COMMUNICATE_WITH_DRIVER){
@@ -535,13 +440,14 @@ int main(int argc, char** argv) {
           cout << "out of mem" << endl;
       }
 
-     double frameRate;
-          if(nRet == IS_SUCCESS){
-              cout << "Camera getImage success" << endl;
-          }
-          memcpy(frame.ptr(), pMem, frame.cols * frame.rows);
-          is_GetFramesPerSecond (hCam, &frameRate);
-          cout << "The framerate is: " << frameRate << endl;*/
+      double frameRate;
+      if(nRet == IS_SUCCESS){
+          cout << "Camera getImage success" << endl;
+      }
+      is_GetFramesPerSecond (hCam, &frameRate);
+      cout << "The framerate is: " << frameRate << endl;
+*/
+      memcpy(frame.ptr(), pMem, frame.cols * frame.rows);
       }else{
           vc >> frame;
       }
@@ -609,8 +515,111 @@ int main(int argc, char** argv) {
 
          size_t len_index = index;
          index += 4;
+if(a1 == 0.0 or a2 == 0.0 or b1 == 0.0 or b2 == 0.0 or c1 == 0.0 or c2 == 0.0 or d1 == 0.0 or d2 == 0.0){
+         for (size_t i=0; i<detections.size(); ++i) {
+             //Add code in order to copy and send array
+             //Static buffer
+             TagDetection &dd = detections[i];
+             cv::Mat r, t;
+
+             if (cvPose) {
 
 
+                 CameraUtil::homographyToPoseCV(f, f, s,
+                         detections[i].homography,
+                         r, t);
+
+             } else {
+
+                 cv::Mat_<double> M =
+                     CameraUtil::homographyToPose(f, f, s,
+                             detections[i].homography,
+                             false);
+
+                 cv::Mat_<double> R = M.rowRange(0,3).colRange(0, 3);
+
+                 t = M.rowRange(0,3).col(3);
+
+                 cv::Rodrigues(R, r);
+
+             }
+
+             cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
+            // Origin of axis detected
+            if (dd.id == 0) {
+               putText(frame, "0,0",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+               cout << "prev: " << dd.cxy.x << " " << dd.cxy.y << " vs " << dstmat[npoints-1]->x  << " " << dstmat[npoints-1]->y << endl; 
+               a1 = dstmat[npoints-1]->x; // dd.cxy.x;
+               a2 = dstmat[npoints-1]->y; // dd.cxy.y;
+               // New X-Axis detected
+            } else if (dd.id == 1) {
+               putText(frame, "X Axis",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+               cout << "prev: " << dd.cxy.x << " " << dd.cxy.y << " vs " << dstmat[npoints-1]->x  << " " << dstmat[npoints-1]->y << endl; 
+               b1 = dstmat[npoints-1]->x; // dd.cxy.x;
+               b2 = dstmat[npoints-1]->y; // dd.cxy.y;
+               //            b1 = b1-a1;
+               //            b2 = b2-a2;
+               // New Y-Axis detected
+            } else if (dd.id == 2) {
+               putText(frame, "Y Axis",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+               cout << "prev: " << dd.cxy.x << " " << dd.cxy.y << " vs " << dstmat[npoints-1]->x  << " " << dstmat[npoints-1]->y << endl; 
+               c1 = dstmat[npoints-1]->x; // dd.cxy.x;
+               c2 = dstmat[npoints-1]->y; // dd.cxy.y;
+               //            c1 = c1-a1;
+               //            c2 = c2-a2;
+               // Quad Angle used for perspective transform
+            } else if (dd.id == 3) {
+               putText(frame, "Quad Axis",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+               cout << "prev: " << dd.cxy.x << " " << dd.cxy.y << " vs " << dstmat[npoints-1]->x  << " " << dstmat[npoints-1]->y << endl; 
+               d1 = dstmat[npoints-1]->x; // dd.cxy.x;
+               d2 = dstmat[npoints-1]->y; // dd.cxy.y;
+               //            d1 = d1-a1;
+               //            d2 = d2-a2;
+            } 
+         }
+         //cv::Mat edited;
+         //cv::Mat dist;
+         //cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
+
+         //cv::imshow( "Display window" , edited );
+         // Other ID's and coordinates detected
+         //double det = 1.0/(b1*c2-c1*b2);
+         //std::cout<<"1/det "<<det<<"\n";
+         //double f1 = det*c2;
+         //double f2 = det*(-c1);
+         //double f3 = det*(-b2);
+         //double f4 = det*b1;
+
+         at::Point source_points_vec[4];
+         at::Point dest_points_vec[4];
+
+
+         source_points_vec[0] = at::Point(a1, a2);
+         source_points_vec[1] = at::Point(b1, b2);
+         source_points_vec[2] = at::Point(d1, d2);
+         source_points_vec[3] = at::Point(c1, c2);
+
+         //std::cout << "One: " << one << "\n";
+         
+         dest_points_vec[0] =  at::Point(0.0, 0.0);
+         dest_points_vec[1] =  at::Point(1.0, 0.0);
+         dest_points_vec[2] =  at::Point(1.0, 1.0);
+         dest_points_vec[3] =  at::Point(0.0, 1.0);
+
+         pts = getPerspectiveTransform(source_points_vec, dest_points_vec);
+         }
          //std::cout<<"PTS: " << pts << "\n";
 
          std::vector<at::Point>  prevDetections(detections.size());
@@ -634,7 +643,29 @@ int main(int argc, char** argv) {
                         1, CV_AA);
 
                }
-            if(dd.id == 4){
+            
+            if (dd.id == 0) {
+               putText(frame, "0,0",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+            } else if (dd.id == 1) {
+               putText(frame, "X Axis",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+            } else if (dd.id == 2) {
+               putText(frame, "Y Axis",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+            } else if (dd.id == 3) {
+               putText(frame, "Quad Axis",
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,0,250), 2, CV_AA);
+            } 
+            else if(dd.id == 4){
                 dir_x = newDetections[i].x;
                 dir_y = newDetections[i].y;
                // Print out Tag ID in center of Tag
@@ -643,7 +674,8 @@ int main(int argc, char** argv) {
                      CV_FONT_NORMAL,
                      1.0, cvScalar(0,250,0), 2, CV_AA);
             }
-            if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3 and dd.id != 4) {
+            //if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3 and dd.id != 4) {
+            else if(dd.id == 5){
                //boost::chrono::nanoseconds start;
 
                 std::vector<at::Point>  frontDirection(1);
