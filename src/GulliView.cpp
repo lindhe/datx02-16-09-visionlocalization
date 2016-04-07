@@ -78,8 +78,8 @@ typedef struct GulliViewOptions {
       family_str(DEFAULT_TAG_FAMILY),
       error_fraction(1),
       device_num(1),
-      focal_length(480),
-      tag_size(0.1905),
+      focal_length(906),
+      tag_size(0.133),
       frame_width(0),
       frame_height(0),
       /* Changed to False so that text comes out correctly. */
@@ -322,13 +322,16 @@ int main(int argc, char** argv) {
    int cvPose = 0;
    boost::asio::io_service io_service;
    udp::resolver resolver(io_service);
-   udp::resolver::query query(udp::v4(), "127.0.0.1", "daytime");
+   udp::resolver::query query(udp::v4(), "192.168.2.42", "daytime");
    udp::endpoint receiver_endpoint = *resolver.resolve(query);
 
    udp::socket socket(io_service);
    socket.open(udp::v4());
    uint32_t seq = 0;
 
+   ptime start;
+   start = boost::posix_time::microsec_clock::local_time();
+   int loop = 0;
    while (1) {
       if(opts.ueye){
          /* nRet = is_GetImageMem(*hCamPtr, &pMem);
@@ -373,8 +376,6 @@ int main(int argc, char** argv) {
       }else{
           vc >> frame;
       }
-      ptime start;
-      start = boost::posix_time::microsec_clock::local_time();
       //std::cout << "Start Time " << start << "\n";
       //std::string startProcStr = helper::num2str(boost::posix_time::microsec_clock::local_time());
       if (frame.empty()) {
@@ -505,7 +506,8 @@ int main(int argc, char** argv) {
          size_t len_index = index;
          index += 4;
 
-
+if(loop <=1){
+         loop++;
          for (size_t i=0; i<detections.size(); ++i) {
             //Add code in order to copy and send array
             //Static buffer
@@ -582,7 +584,7 @@ int main(int argc, char** argv) {
 
          pts = getPerspectiveTransform(source_points, dest_points);
          //std::cout<<"PTS: " << pts << "\n";
-
+}
          std::vector<at::Point>  prevDetections(detections.size());
          for (size_t i=0; i<detections.size(); ++i) {
             TagDetection &dd = detections[i];
