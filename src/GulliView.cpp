@@ -128,8 +128,8 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
  -M              Toggle display mirroring\n\
  -n              No gui\n\
  -u              Ueye camera\n\
- -x m.m.         Offset x-axis\n\
- -y m.m.         Offset y-axis\n\
+ -x LENGTH       Offset x-axis in millimeters\n\
+ -y LENGTH       Offset y-axis in millimeters\n\
  -t              Display timestamp\n\
  -i              Display debug information when terminate\n",
           tool_name,
