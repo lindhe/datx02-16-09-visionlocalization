@@ -88,7 +88,9 @@ typedef struct GulliViewOptions {
       no_gui(false),
       ueye(false),
       offset_x(0),
-      offset_y(0)
+      offset_y(0),
+      timestamp(false),
+      debuginfo(false)
   {
   }
   TagDetectorParams params;
@@ -104,6 +106,8 @@ typedef struct GulliViewOptions {
   bool ueye;
   int offset_x;
   int offset_y;
+  bool timestamp;
+  bool debuginfo;
 } GulliViewOptions;
 
 
@@ -123,7 +127,11 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
  -H HEIGHT       Set the camera image height in pixels\n\
  -M              Toggle display mirroring\n\
  -n              No gui\n\
- -u              Ueye camera\n",
+ -u              Ueye camera\n\
+ -x m.m.         Offset x-axis\n\
+ -y m.m.         Offset y-axis\n\
+ -t              Display timestamp\n\
+ -i              Display debug information when terminate\n",
           tool_name,
 	  /* Options removed that are not needed */
 	  /* Can be added later for further functionality */
@@ -164,7 +172,7 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
 
 GulliViewOptions parse_options(int argc, char** argv) {
   GulliViewOptions opts;
-  const char* options_str = "hDS:s:a:m:V:N:brnf:e:d:F:z:W:H:M:ux:y:";
+  const char* options_str = "hDS:s:a:m:V:N:brnf:e:d:F:z:W:H:M:utix:y:";
   int c;
   while ((c = getopt(argc, argv, options_str)) != -1) {
     switch (c) {
@@ -192,8 +200,9 @@ GulliViewOptions parse_options(int argc, char** argv) {
       case 'u': opts.ueye = true; break; 
       case 'x': opts.offset_x = atoi(optarg); break; 
       case 'y': opts.offset_y = atoi(optarg); break; 
+      case 't': opts.timestamp = true; break; 
+      case 'i': opts.debuginfo = true; break; 
       default:
-        cout << "char that doesnt exist: " << c << endl;
         fprintf(stderr, "\n");
         print_usage(argv[0], stderr);
         exit(1);
@@ -623,7 +632,7 @@ if(loop <=1){
                      CV_FONT_NORMAL,
                      1.0, cvScalar(0,250,0), 2, CV_AA);
             }
-            if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3 and dd.id != 4) {
+            if (dd.id == 5) {
                //boost::chrono::nanoseconds start;
 
                cv::Mat r, t;
@@ -742,7 +751,9 @@ if(loop <=1){
                recv_buf[index++] = heading >> 8;
                recv_buf[index++] = heading;
                ++len;
-               std::cout << dd.id << " " << x_coord << " " << y_coord << " " << heading <<  std::endl;
+               string timestamp = "";
+               opts.timestamp ? (timestamp = " " + procTim):""; 
+               std::cout << dd.id << " " << x_coord << " " << y_coord << " " << heading << timestamp << std::endl;
 
                //		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
                //		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::microsec_clock::local_time()) + " [" +  helper::num2str(start) + "]";
@@ -797,7 +808,9 @@ if(loop <=1){
 
    }
    /* Report times of position? */
-   detector.reportTimers();
+   if(opts.debuginfo){
+        detector.reportTimers();
+   }
    if(opts.ueye){
        nRet = is_FreeImageMem (*hCamPtr, ppcImgMem, id);
        nRet = is_ExitCamera(*hCamPtr);
