@@ -86,7 +86,9 @@ typedef struct GulliViewOptions {
       /* Issues with detection when set to False */
       mirror_display(false),
       no_gui(false),
-      ueye(false)
+      ueye(false),
+      offset_x(0),
+      offset_y(0)
   {
   }
   TagDetectorParams params;
@@ -100,6 +102,8 @@ typedef struct GulliViewOptions {
   bool mirror_display;
   bool no_gui;
   bool ueye;
+  int offset_x;
+  int offset_y;
 } GulliViewOptions;
 
 
@@ -160,7 +164,7 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
 
 GulliViewOptions parse_options(int argc, char** argv) {
   GulliViewOptions opts;
-  const char* options_str = "hDS:s:a:m:V:N:brnf:e:d:F:z:W:H:M:u";
+  const char* options_str = "hDS:s:a:m:V:N:brnf:e:d:F:z:W:H:M:ux:y:";
   int c;
   while ((c = getopt(argc, argv, options_str)) != -1) {
     switch (c) {
@@ -186,7 +190,10 @@ GulliViewOptions parse_options(int argc, char** argv) {
       case 'M': opts.mirror_display = !opts.mirror_display; break;
       case 'n': opts.no_gui = 1; break;
       case 'u': opts.ueye = true; break; 
+      case 'x': opts.offset_x = atoi(optarg); break; 
+      case 'y': opts.offset_y = atoi(optarg); break; 
       default:
+        cout << "char that doesnt exist: " << c << endl;
         fprintf(stderr, "\n");
         print_usage(argv[0], stderr);
         exit(1);
@@ -332,6 +339,7 @@ int main(int argc, char** argv) {
    ptime start;
    start = boost::posix_time::microsec_clock::local_time();
    int loop = 0;
+   //cout << opts.offset_x << ", " << opts.offset_y << endl; 
    while (1) {
       if(opts.ueye){
          /* nRet = is_GetImageMem(*hCamPtr, &pMem);
@@ -406,7 +414,7 @@ int main(int argc, char** argv) {
          double ss = 0.5*s;
          /* sz changed to negative value to flip cube */
 //         double sz = -s;
-         double sz = -0.32;
+         double sz = -0.23;
 //         enum { npoints = 8, nedges = 12 };
 
          enum { npoints = 6, nedges = 5 };
@@ -595,6 +603,29 @@ if(loop <=1){
 
          for (size_t i=0; i<detections.size(); ++i) {
             TagDetection &dd = detections[i];
+
+               /* Used to draw lines on video image */
+               int lines = dd.id==5? nedges:(nedges-1);
+               for (int j=0; j<lines; ++j) {
+                  cv::line(show,
+                        dstmat(edges[j][0],0),
+                        dstmat(edges[j][1],0),
+                        cvPose ? CV_RGB(0,0,255) : CV_RGB(255,0,0),
+                        1, CV_AA);
+
+               }
+            if(dd.id == 4){
+                dir_x = newDetections[i].x;
+                dir_y = newDetections[i].y;
+               // Print out Tag ID in center of Tag
+               putText(frame, helper::num2str(dd.id),
+                     cv::Point(dd.cxy.x,dd.cxy.y),
+                     CV_FONT_NORMAL,
+                     1.0, cvScalar(0,250,0), 2, CV_AA);
+            }
+            if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3 and dd.id != 4) {
+               //boost::chrono::nanoseconds start;
+
                cv::Mat r, t;
 
                if (cvPose) {
@@ -620,29 +651,6 @@ if(loop <=1){
                }
 
                cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
-
-               /* Used to draw lines on video image */
-               int lines = dd.id==5? nedges:(nedges-1);
-               for (int j=0; j<lines; ++j) {
-                  cv::line(show,
-                        dstmat(edges[j][0],0),
-                        dstmat(edges[j][1],0),
-                        cvPose ? CV_RGB(0,0,255) : CV_RGB(255,0,0),
-                        1, CV_AA);
-
-               }
-            if(dd.id == 4){
-                dir_x = newDetections[i].x;
-                dir_y = newDetections[i].y;
-               // Print out Tag ID in center of Tag
-               putText(frame, helper::num2str(dd.id),
-                     cv::Point(dd.cxy.x,dd.cxy.y),
-                     CV_FONT_NORMAL,
-                     1.0, cvScalar(0,250,0), 2, CV_AA);
-            }
-            if (dd.id != 0 and dd.id != 1 and dd.id != 2 and dd.id != 3 and dd.id != 4) {
-               //boost::chrono::nanoseconds start;
-
                 std::vector<at::Point>  frontDirection(1);
                 std::vector<double>  refDirection(2);
                 refDirection[0] = 1;
@@ -718,12 +726,12 @@ if(loop <=1){
                recv_buf[index++] = id >> 16;
                recv_buf[index++] = id >> 8;
                recv_buf[index++] = id;
-               int32_t x_coord = (int32_t)(x_new * 1000.0);
+               int32_t x_coord = (int32_t)((x_new * 1000.0) + opts.offset_x);
                recv_buf[index++] = x_coord >> 24;
                recv_buf[index++] = x_coord >> 16;
                recv_buf[index++] = x_coord >> 8;
                recv_buf[index++] = x_coord;
-               int32_t y_coord = (int32_t)(y_new * 1000.0);
+               int32_t y_coord = (int32_t)((y_new * 1000.0) + opts.offset_y);
                recv_buf[index++] = y_coord >> 24;
                recv_buf[index++] = y_coord >> 16;
                recv_buf[index++] = y_coord >> 8;
