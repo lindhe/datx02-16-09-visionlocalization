@@ -253,6 +253,7 @@ int main(int argc, char** argv) {
    GulliViewOptions opts = parse_options(argc, argv);
    TagFamily family(opts.family_str);
 
+   //init variables for ueye camera
    char* ppcImgMem;
    INT id;
    HIDS hCam = 0;
@@ -301,6 +302,7 @@ int main(int argc, char** argv) {
       << vc.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
       << vc.get(CV_CAP_PROP_FRAME_HEIGHT) << "\n";
   */
+   //init ueye camera 
    nRet = is_AllocImageMem (*hCamPtr, 1280, 1024, 8, &ppcImgMem, &id);
    nRet = is_SetImageMem(hCam, ppcImgMem, id);
    nRet = is_SetFrameRate(*hCamPtr, 60.0, &newFPS);
@@ -308,9 +310,9 @@ int main(int argc, char** argv) {
    nRet = is_GetImageMem(*hCamPtr, &pMem);
    UINT nPixelClock;
  
-// Get current pixel clock
+   // Get current pixel clock
    nRet = is_PixelClock(hCam, IS_PIXELCLOCK_CMD_GET, (void*)&nPixelClock, sizeof(nPixelClock));
-//   cout << "This is the currernt pixel clock: " << nPixelClock << endl;
+   //cout << "This is the currernt pixel clock: " << nPixelClock << endl;
    cv::Mat frame(1024, 1280, CV_8UC1, (uchar *) pMem);
    cv::Point2d opticalCenter;
    /*
@@ -338,7 +340,7 @@ int main(int argc, char** argv) {
    int cvPose = 0;
    boost::asio::io_service io_service;
    udp::resolver resolver(io_service);
-   udp::resolver::query query(udp::v4(), "192.168.2.42", "daytime");
+   udp::resolver::query query(udp::v4(), "10.0.0.100", "daytime");
    udp::endpoint receiver_endpoint = *resolver.resolve(query);
 
    udp::socket socket(io_service);
@@ -347,12 +349,10 @@ int main(int argc, char** argv) {
 
    ptime start;
    start = boost::posix_time::microsec_clock::local_time();
-   int loop = 0;
-   //cout << opts.offset_x << ", " << opts.offset_y << endl; 
    while (1) {
       if(opts.ueye){
-         /* nRet = is_GetImageMem(*hCamPtr, &pMem);
-            
+         nRet = is_GetImageMem(*hCamPtr, &pMem);
+       /*     
       if(nRet == IS_BAD_STRUCTURE_SIZE){
           cout << "Bad structure" << endl;
       }else if(nRet == IS_CANT_COMMUNICATE_WITH_DRIVER){
@@ -387,9 +387,10 @@ int main(int argc, char** argv) {
           if(nRet == IS_SUCCESS){
               cout << "Camera getImage success" << endl;
           }
-          memcpy(frame.ptr(), pMem, frame.cols * frame.rows);
           is_GetFramesPerSecond (hCam, &frameRate);
-          cout << "The framerate is: " << frameRate << endl;*/
+          cout << "The framerate is: " << frameRate << endl;
+          */
+          memcpy(frame.ptr(), pMem, frame.cols * frame.rows);
       }else{
           vc >> frame;
       }
@@ -421,24 +422,9 @@ int main(int argc, char** argv) {
 
          double s = opts.tag_size;
          double ss = 0.5*s;
-         /* sz changed to negative value to flip cube */
-//         double sz = -s;
+         //The height of the object
          double sz = -0.23;
-//         enum { npoints = 8, nedges = 12 };
-
          enum { npoints = 6, nedges = 5 };
-         /* Cube fliped by changing sz to negative */
-/*            cv::Point3d src[npoints] = {
-            cv::Point3d(-ss, -ss, 0),
-            cv::Point3d( ss, -ss, 0),
-            cv::Point3d( ss,  ss, 0),
-            cv::Point3d(-ss,  ss, 0),
-            cv::Point3d(-ss, -ss, sz),
-            cv::Point3d( ss, -ss, sz),
-            cv::Point3d( ss,  ss, sz),
-            cv::Point3d(-ss,  ss, sz),
-         };*/
-
          cv::Point3d src[npoints] = {
             cv::Point3d(-ss, -ss, 0),
             cv::Point3d(ss,  -ss, 0),
@@ -448,7 +434,6 @@ int main(int argc, char** argv) {
             cv::Point3d(0,     0, sz),
          };
 
-
          /* Possible edges of the box created. Come back to THIS*/
          int edges[nedges][2] = {
 
@@ -457,17 +442,6 @@ int main(int argc, char** argv) {
             { 2, 3 },
             { 3, 0 },
             { 4, 5 }
-            /* Comment out two matrices below for 2D box */
-/*            { 4, 5 },
-            { 5, 6 },
-            { 6, 7 },
-            { 7, 4 },
-
-            { 0, 4 },
-            { 1, 5 },
-            { 2, 6 },
-            { 3, 7 }
-*/
          };
 
          cv::Point2d dst[npoints];
@@ -523,8 +497,6 @@ int main(int argc, char** argv) {
          size_t len_index = index;
          index += 4;
 
-if(loop <=1){
-         loop++;
          for (size_t i=0; i<detections.size(); ++i) {
             //Add code in order to copy and send array
             //Static buffer
@@ -601,7 +573,7 @@ if(loop <=1){
 
          pts = getPerspectiveTransform(source_points, dest_points);
          //std::cout<<"PTS: " << pts << "\n";
-}
+
          std::vector<at::Point>  prevDetections(detections.size());
          for (size_t i=0; i<detections.size(); ++i) {
             TagDetection &dd = detections[i];
@@ -636,7 +608,7 @@ if(loop <=1){
                //boost::chrono::nanoseconds start;
 
                cv::Mat r, t;
-
+               //Get rotation and translation vector
                if (cvPose) {
 
 
@@ -658,14 +630,15 @@ if(loop <=1){
                   cv::Rodrigues(R, r);
 
                }
+                //Get projection vector
+                cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
 
-               cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
+                //Calculate angle
                 std::vector<at::Point>  frontDirection(1);
                 std::vector<double>  refDirection(2);
                 refDirection[0] = 1;
                 refDirection[1] = 0;
                 frontDirection[0] = at::Point(newDetections[i].x-dir_x, newDetections[i].y-dir_y);
-
                 double length = sqrt(pow(frontDirection[0].x,2)+pow(frontDirection[0].y,2));
                 std::vector<double> point(2);
                 point[0] = frontDirection[0].x/length;
@@ -676,8 +649,8 @@ if(loop <=1){
                 if(newDetections[i].y < dir_y){
                     direction = 360.0-direction;
                 }
-                //cout << "The dotproduct is: " << dotproduct << ", and angle in deg. " << direction <<  endl; 
-
+                
+                //Get coordinates from projection vector and project on the plane
                 std::vector<at::Point>  prevPointDetections(1);
                 prevPointDetections[0] = at::Point(dstmat[npoints-1]->x, dstmat[npoints-1]->y);
                 std::vector<at::Point>  newPointDetections(1);
@@ -784,8 +757,6 @@ if(loop <=1){
          ++seq;
 
          }
-
-
 
       }
 
