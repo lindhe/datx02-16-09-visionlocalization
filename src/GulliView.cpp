@@ -11,6 +11,7 @@
  * Copyright (c) 2013-2014 Andrew Soderberg-Rivkin <sandrew@student.chalmers.se>
  * Copyright (c) 2013-2014 Sanjana Hangal <sanjana@student.chalmers.se>
  * Copyright (c) 2014 Thomas Petig <petig@chalmers.se>
+ * Copyright (c) 2016 Robert Gustafsson <robg@student.chalmers.se>
  ********************************************************************/
 
 #include "TagDetector.h"
