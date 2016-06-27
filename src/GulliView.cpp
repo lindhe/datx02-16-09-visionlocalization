@@ -134,8 +134,8 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
  -t              Display timestamp\n\
  -i              Display debug information when terminate\n",
           tool_name,
-	  /* Options removed that are not needed */
-	  /* Can be added later for further functionality */
+      /* Options removed that are not needed */
+      /* Can be added later for further functionality */
           //p.sigma,
           //p.segSigma,
           //p.thetaThresh,
@@ -198,11 +198,11 @@ GulliViewOptions parse_options(int argc, char** argv) {
       case 'H': opts.frame_height = atoi(optarg); break;
       case 'M': opts.mirror_display = !opts.mirror_display; break;
       case 'n': opts.no_gui = 1; break;
-      case 'u': opts.ueye = true; break; 
-      case 'x': opts.offset_x = atoi(optarg); break; 
-      case 'y': opts.offset_y = atoi(optarg); break; 
-      case 't': opts.timestamp = true; break; 
-      case 'i': opts.debuginfo = true; break; 
+      case 'u': opts.ueye = true; break;
+      case 'x': opts.offset_x = atoi(optarg); break;
+      case 'y': opts.offset_y = atoi(optarg); break;
+      case 't': opts.timestamp = true; break;
+      case 'i': opts.debuginfo = true; break;
       default:
         fprintf(stderr, "\n");
         print_usage(argv[0], stderr);
@@ -213,37 +213,37 @@ GulliViewOptions parse_options(int argc, char** argv) {
   return opts;
 }
 cv::Mat OpenWarpPerspective(const cv::Mat& _image
-	  , const cv::Point& _lu
-	  , const cv::Point& _ru
-	  , const cv::Point& _rd
-	  , const cv::Point& _ld
-	  , const cv::Point& _lu_result
-	  , const cv::Point& _ru_result
-	  , const cv::Point& _rd_result
-	  , const cv::Point& _ld_result
-	  , cv::Mat& _transform_matrix)
-	{
-	  // todo do some checks on input.
+      , const cv::Point& _lu
+      , const cv::Point& _ru
+      , const cv::Point& _rd
+      , const cv::Point& _ld
+      , const cv::Point& _lu_result
+      , const cv::Point& _ru_result
+      , const cv::Point& _rd_result
+      , const cv::Point& _ld_result
+      , cv::Mat& _transform_matrix)
+    {
+      // todo do some checks on input.
 
-	  cv::Point2f source_points[4];
-	  cv::Point2f dest_points[4];
+      cv::Point2f source_points[4];
+      cv::Point2f dest_points[4];
 
 
-	  source_points[0] = _lu;
-	  source_points[1] = _ru;
-	  source_points[2] = _rd;
-	  source_points[3] = _ld;
+      source_points[0] = _lu;
+      source_points[1] = _ru;
+      source_points[2] = _rd;
+      source_points[3] = _ld;
 
-	  dest_points[0] = _lu_result;
-	  dest_points[1] = _ru_result;
-	  dest_points[2] = _rd_result;
-	  dest_points[3] = _ld_result;
+      dest_points[0] = _lu_result;
+      dest_points[1] = _ru_result;
+      dest_points[2] = _rd_result;
+      dest_points[3] = _ld_result;
 
-	  cv::Mat dst;
-	  _transform_matrix = cv::getPerspectiveTransform(source_points, dest_points);
-	  cv::warpPerspective(_image, dst, _transform_matrix, cv::Size(CV_CAP_PROP_FRAME_WIDTH, CV_CAP_PROP_FRAME_HEIGHT));
+      cv::Mat dst;
+      _transform_matrix = cv::getPerspectiveTransform(source_points, dest_points);
+      cv::warpPerspective(_image, dst, _transform_matrix, cv::Size(CV_CAP_PROP_FRAME_WIDTH, CV_CAP_PROP_FRAME_HEIGHT));
 
-	  return dst;
+      return dst;
 }
 
 int main(int argc, char** argv) {
@@ -288,7 +288,7 @@ int main(int argc, char** argv) {
 
 
            }
-     }   
+     }
 
    if (opts.error_fraction >= 1 && opts.error_fraction <= 1) {
       family.setErrorRecoveryFraction(opts.error_fraction);
@@ -303,14 +303,14 @@ int main(int argc, char** argv) {
       << vc.get(CV_CAP_PROP_FRAME_WIDTH) << "x"
       << vc.get(CV_CAP_PROP_FRAME_HEIGHT) << "\n";
   */
-   //init ueye camera 
+   //init ueye camera
    nRet = is_AllocImageMem (*hCamPtr, 1280, 1024, 8, &ppcImgMem, &id);
    nRet = is_SetImageMem(hCam, ppcImgMem, id);
    nRet = is_SetFrameRate(*hCamPtr, 60.0, &newFPS);
    nRet = is_CaptureVideo(*hCamPtr, IS_DONT_WAIT);
    nRet = is_GetImageMem(*hCamPtr, &pMem);
    UINT nPixelClock;
- 
+
    // Get current pixel clock
    nRet = is_PixelClock(hCam, IS_PIXELCLOCK_CMD_GET, (void*)&nPixelClock, sizeof(nPixelClock));
    //cout << "This is the currernt pixel clock: " << nPixelClock << endl;
@@ -353,7 +353,7 @@ int main(int argc, char** argv) {
    while (1) {
       if(opts.ueye){
          nRet = is_GetImageMem(*hCamPtr, &pMem);
-       /*     
+       /*
       if(nRet == IS_BAD_STRUCTURE_SIZE){
           cout << "Bad structure" << endl;
       }else if(nRet == IS_CANT_COMMUNICATE_WITH_DRIVER){
@@ -540,7 +540,7 @@ int main(int argc, char** argv) {
                d2 = dd.cxy.y;
                //            d1 = d1-a1;
                //            d2 = d2-a2;
-            } 
+            }
          }
 
          //cv::Mat edited;
@@ -566,7 +566,7 @@ int main(int argc, char** argv) {
          source_points[3] = at::Point(c1, c2);
 
          //std::cout << "One: " << one << "\n";
-         
+
          dest_points[0] =  at::Point(0.0, 0.0);
          dest_points[1] =  at::Point(1.0, 0.0);
          dest_points[2] =  at::Point(1.0, 1.0);
@@ -645,12 +645,12 @@ int main(int argc, char** argv) {
                 point[0] = frontDirection[0].x/length;
                 point[1] = frontDirection[0].y/length;
                 double dotproduct = std::inner_product(point.begin(), point.end(),refDirection.begin(), 0.0);
-                double direction = acos(dotproduct) * 180.0 / PI;   
+                double direction = acos(dotproduct) * 180.0 / PI;
 
                 if(newDetections[i].y < dir_y){
                     direction = 360.0-direction;
                 }
-                
+
                 //Get coordinates from projection vector and project on the plane
                 std::vector<at::Point>  prevPointDetections(1);
                 prevPointDetections[0] = at::Point(dstmat[npoints-1]->x, dstmat[npoints-1]->y);
@@ -726,11 +726,11 @@ int main(int argc, char** argv) {
                recv_buf[index++] = heading;
                ++len;
                string timestamp = "";
-               opts.timestamp ? (timestamp = " " + procTim):""; 
+               opts.timestamp ? (timestamp = " " + procTim):"";
                std::cout << dd.id << " " << x_coord << " " << y_coord << " " << heading << timestamp << std::endl;
 
-               //		std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
-               //		+ helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::microsec_clock::local_time()) + " [" +  helper::num2str(start) + "]";
+               //       std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
+               //       + helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::microsec_clock::local_time()) + " [" +  helper::num2str(start) + "]";
 
                //std::cout<<"Output: " << outPut <<"\n";
                //std::string startTime =;
