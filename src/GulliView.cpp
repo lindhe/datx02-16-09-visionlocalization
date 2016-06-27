@@ -26,7 +26,6 @@
 #include <string>
 #include <signal.h>
 #include <numeric>
-#include <numeric>
 
 #include <opencv2/highgui/highgui.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
@@ -91,6 +90,7 @@ typedef struct GulliViewOptions {
       offset_x(0),
       offset_y(0),
       timestamp(false),
+      period(false),
       debuginfo(false)
   {
   }
@@ -108,6 +108,7 @@ typedef struct GulliViewOptions {
   int offset_x;
   int offset_y;
   bool timestamp;
+  bool period;
   bool debuginfo;
 } GulliViewOptions;
 
@@ -132,6 +133,7 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
  -x LENGTH       Offset x-axis in millimeters\n\
  -y LENGTH       Offset y-axis in millimeters\n\
  -t              Display timestamp\n\
+ -p              Display period since last detection\n\
  -i              Display debug information when terminate\n",
           tool_name,
       /* Options removed that are not needed */
@@ -173,7 +175,7 @@ GulliView Program used for tag detection on Autonomous Vehicles. Options:\n\
 
 GulliViewOptions parse_options(int argc, char** argv) {
   GulliViewOptions opts;
-  const char* options_str = "hDS:s:a:m:V:N:brnf:e:d:F:z:W:H:M:utix:y:";
+  const char* options_str = "hDS:s:a:m:V:N:brnf:e:d:F:z:W:H:M:utpix:y:";
   int c;
   while ((c = getopt(argc, argv, options_str)) != -1) {
     switch (c) {
@@ -202,6 +204,7 @@ GulliViewOptions parse_options(int argc, char** argv) {
       case 'x': opts.offset_x = atoi(optarg); break;
       case 'y': opts.offset_y = atoi(optarg); break;
       case 't': opts.timestamp = true; break;
+      case 'p': opts.period = true; break;
       case 'i': opts.debuginfo = true; break;
       default:
         fprintf(stderr, "\n");
@@ -349,9 +352,11 @@ int main(int argc, char** argv) {
    socket.open(udp::v4());
    uint32_t seq = 0;
 
-   ptime start;
-   start = boost::posix_time::microsec_clock::local_time();
+   ptime start = boost::posix_time::microsec_clock::local_time();
+   ptime periodStart = boost::posix_time::microsec_clock::local_time();
+
    while (1) {
+
       if(opts.ueye){
          nRet = is_GetImageMem(*hCamPtr, &pMem);
        /*
@@ -393,9 +398,10 @@ int main(int argc, char** argv) {
           cout << "The framerate is: " << frameRate << endl;
           */
           memcpy(frame.ptr(), pMem, frame.cols * frame.rows);
-      }else{
+      } else {
           vc >> frame;
       }
+
       //std::cout << "Start Time " << start << "\n";
       //std::string startProcStr = helper::num2str(boost::posix_time::microsec_clock::local_time());
       if (frame.empty()) {
@@ -683,8 +689,6 @@ int main(int argc, char** argv) {
                      CV_FONT_NORMAL,
                      1.0, cvScalar(0,250,0), 2, CV_AA);
 
-
-
                //TODO:Processing time
                //boost::chrono::nanoseconds end;
                //boost::chrono::nanoseconds count;
@@ -701,9 +705,11 @@ int main(int argc, char** argv) {
                end = boost::posix_time::microsec_clock::local_time();
                //std::cout << "End Time " << end << "\n";
                time_duration processTime = end-start;
+               time_duration periodTime = end-periodStart;
                //difftime(end,start);
                std::string procTim = helper::num2str(processTime);
-               //std::cout << "Elapsed Time: " << procTim << "\n";
+               std::string perTim = helper::num2str(periodTime);
+               /* std::cout << "Elapsed Time: " << procTim << "\n"; */
 
                uint32_t id = dd.id - 3;
                recv_buf[index++] = id >> 24;
@@ -726,9 +732,11 @@ int main(int argc, char** argv) {
                recv_buf[index++] = heading >> 8;
                recv_buf[index++] = heading;
                ++len;
-               string timestamp = "";
+               string timestamp, period = "";
                opts.timestamp ? (timestamp = " " + procTim):"";
-               std::cout << dd.id << " " << x_coord << " " << y_coord << " " << heading << timestamp << std::endl;
+               opts.period ? (period = " " + perTim):"";
+               std::cout << dd.id << " " << x_coord << " " << y_coord << " "
+                  << heading << timestamp << period << std::endl;
 
                //       std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
                //       + helper::num2str(x_new) + ", " + helper::num2str(y_new) + " Time: " + helper::num2str(boost::posix_time::microsec_clock::local_time()) + " [" +  helper::num2str(start) + "]";
@@ -745,6 +753,10 @@ int main(int argc, char** argv) {
                //std::cout << "---Coordinates X---: " << x_new << "\n";
                //std::cout << "---Coordinates Y---: " << y_new << "\n";
                //Get the time of full processing/timestamp for packet
+
+               /* This period reset has an accuracy of about 1 ms, compared to
+                * the timestamp */
+               periodStart = boost::posix_time::microsec_clock::local_time();
             }
 
             //std::cout << newOrgX << "\n";
@@ -786,15 +798,17 @@ int main(int argc, char** argv) {
       }
 
    }
+
    /* Report times of position? */
    if(opts.debuginfo){
         detector.reportTimers();
    }
+
    if(opts.ueye){
        nRet = is_FreeImageMem (*hCamPtr, ppcImgMem, id);
        nRet = is_ExitCamera(*hCamPtr);
    }
-   return 0;
 
+   return 0;
 
 }
