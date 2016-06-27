@@ -9,7 +9,7 @@
 #include "MathUtil.h"
 #include <cmath>
 
-const at::real MathUtil::epsilon = AT_EPSILON;
+const at::real MathUtil::epsilon = AT_EPSILON
 const at::real MathUtil::twopi_inv = 0.5/M_PI;
 const at::real MathUtil::twopi = 2.0*M_PI;
 

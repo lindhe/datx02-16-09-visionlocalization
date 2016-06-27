@@ -14,7 +14,7 @@
 #include <iostream>
 
 XYW::XYW() {}
-XYW::XYW(at::real xx, at::real yy, at::real ww): x(xx), y(yy), w(ww) {}  
+XYW::XYW(at::real xx, at::real yy, at::real ww): x(xx), y(yy), w(ww) {}
 at::Point XYW::point() const { return at::Point(x,y); }
 
 Gridder::Gridder(at::real x0, at::real y0, at::real x1, at::real y1, at::real metersPerCell) {
@@ -22,13 +22,13 @@ Gridder::Gridder(at::real x0, at::real y0, at::real x1, at::real y1, at::real me
     this->x0 = x0;
     this->y0 = y0;
     this->metersPerCell = metersPerCell;
-    
+
     width = (int) ((x1 - x0)/metersPerCell + 1);
     height = (int) ((y1 - y0)/metersPerCell + 1);
-    
+
     this->x1 = x0 + metersPerCell*width;
     this->y1 = y0 + metersPerCell*height;
-    
+
     cells.clear();
     cells.resize(width*height);
 
@@ -39,16 +39,16 @@ int Gridder::sub2ind(int x, int y) const {
 }
 
 void Gridder::add(at::real x, at::real y, Segment* s) {
-  
+
   int ix = (int) ((x - x0)/metersPerCell);
   int iy = (int) ((y - y0)/metersPerCell);
-  
+
   if (ix >=0 && iy >=0 && ix < width && iy < height) {
     size_t idx = sub2ind(ix,iy);
     s->nextGrid = cells[idx];
     cells[idx] = s;
   }
-  
+
 }
 
 void Gridder::find(at::real x, at::real y, at::real range, SegmentArray& results) const {
@@ -65,13 +65,13 @@ void Gridder::find(at::real x, at::real y, at::real range, SegmentArray& results
     for (int ix=ix0; ix<=ix1; ++ix) {
 
       if (ix >=0 && iy >=0 && ix < width && iy < height) {
-          
+
         for (Segment* s = cells[sub2ind(ix,iy)]; s; s = s->nextGrid) {
           results.push_back(s);
         }
 
       }
-        
+
     }
   }
 
@@ -99,18 +99,18 @@ bool intersect(const GLineSegment2D& g1,
 
 }
 
-bool intersect(const Segment* s1, 
-               const Segment* s2, 
+bool intersect(const Segment* s1,
+               const Segment* s2,
                at::Point& pinter) {
 
   at::real m00 = s1->x1-s1->x0;
   at::real m01 = s2->x0-s2->x1;
-  
+
   at::real m10 = s1->y1-s1->y0;
   at::real m11 = s2->y0-s2->y1;
 
   at::real det = m00*m11 - m01*m10;
-  
+
   if (MathUtil::fabs(det) < 0.0000000001) {
     return false;
   }
@@ -142,7 +142,7 @@ at::real pdist(const at::Point& p, int x, int y) {
 
 GLineSegment2D::GLineSegment2D() {}
 
-GLineSegment2D::GLineSegment2D(const at::Point& pp1, const at::Point& pp2): 
+GLineSegment2D::GLineSegment2D(const at::Point& pp1, const at::Point& pp2):
     p1(pp1), p2(pp2) {}
 
 at::real GLineSegment2D::length() const {
@@ -155,40 +155,40 @@ GLineSegment2D lsqFitXYW(const XYWArray& points) {
 
   at::real Cxx=0, Cyy=0, Cxy=0, Ex=0, Ey=0, mXX=0, mYY=0, mXY=0, mX=0, mY=0;
   at::real n=0;
-  
+
   int idx = 0;
   for (size_t i=0; i<points.size(); ++i) {
 
     const XYW& tp = points[i];
-    
+
     at::real x = tp.x;
     at::real y = tp.y;
     at::real alpha = tp.w;
-    
+
     mY  += y*alpha;
     mX  += x*alpha;
     mYY += y*y*alpha;
     mXX += x*x*alpha;
     mXY += x*y*alpha;
     n   += alpha;
-    
+
     idx++;
 
   }
-  
+
   Ex  = mX/n;
   Ey  = mY/n;
   Cxx = mXX/n - square(mX/n);
   Cyy = mYY/n - square(mY/n);
   Cxy = mXY/n - (mX/n)*(mY/n);
-  
+
   // find dominant direction via SVD
   at::real phi = 0.5*atan2(-2*Cxy,(Cyy-Cxx));
   //at::real rho = Ex*cos(phi) + Ey*sin(phi);
-  
+
   // compute line parameters
   at::real dx = -sin(phi);
-  at::real dy =  cos(phi); 
+  at::real dy =  cos(phi);
   at::real px = Ex;
   at::real py = Ey;
 
@@ -204,13 +204,13 @@ GLineSegment2D lsqFitXYW(const XYWArray& points) {
 
   at::Point p0(px, py);
   at::Point dd(dx, dy);
-  
+
   at::Point p1 = p0 + mincoord*dd;
   at::Point p2 = p0 + maxcoord*dd;
 
   return GLineSegment2D( p1, p2 );
 
-};
+}
 
 at::real area(const at::Point* p, size_t n) {
 
@@ -218,7 +218,7 @@ at::real area(const at::Point* p, size_t n) {
   if (n < 3) { return 0; }
 
   at::real a = 0;
-  
+
   for (size_t i=0; i<n; ++i) {
 
     const at::Point& p0 = p[i];
@@ -240,7 +240,7 @@ at::real area(const cv::Point* p, size_t n) {
   if (n < 3) { return 0; }
 
   at::real a = 0;
-  
+
   for (size_t i=0; i<n; ++i) {
 
     const cv::Point& p0 = p[i];
@@ -299,13 +299,13 @@ void Quad::recomputeHomography() {
 at::Point Quad::interpolate(const at::Point& p) const {
 
   return interpolate(p.x, p.y);
-  
+
 }
 
 at::Point Quad::interpolate(at::real x, at::real y) const {
 
   at::real z = H[2][0]*x + H[2][1]*y + H[2][2];
-  
+
   return at::Point( (H[0][0]*x + H[0][1]*y + H[0][2])/z + opticalCenter.x,
                       (H[1][0]*x + H[1][1]*y + H[1][2])/z + opticalCenter.y );
 

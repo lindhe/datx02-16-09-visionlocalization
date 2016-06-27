@@ -40,6 +40,6 @@ namespace at {
   typedef cv::Vec<real, 3> Vec3;
   typedef cv::Mat_<real> Mat;
 
-};
+}
 
 #endif

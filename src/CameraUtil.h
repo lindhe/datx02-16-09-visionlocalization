@@ -34,6 +34,6 @@ namespace CameraUtil {
                           cv::Mat& rvec,
                           cv::Mat& tvec);
 
-};
+}
 
 #endif

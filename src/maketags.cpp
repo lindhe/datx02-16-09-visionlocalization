@@ -58,7 +58,7 @@ int lookup_unit(const std::string& label) {
 
   std::cerr << "invalid unit name " << label << "\n";
   exit(1);
-  
+
 }
 
 
@@ -78,12 +78,12 @@ double parse_unit(std::istream& istr) {
     std::string label;
     istr >> label;
     int i = lookup_unit(label);
-    rval *= units[i].points;  
+    rval *= units[i].points;
   }
 
   return rval;
-  
-};
+
+}
 
 double parse_unit(const std::string& str) {
   std::istringstream istr(str);
@@ -97,14 +97,14 @@ Tval parse_value(const std::string& str) {
   if (!(istr >> rval) || istr.peek() != EOF) {
     std::cerr << "error parsing value\n";
     exit(1);
-  } 
+  }
   return rval;
 }
 
 void usage(std::ostream& ostr) {
 
   ostr << "usage: maketags FAMILY [OPTIONS]\n\n"
-       << "  Known tag families:"; 
+       << "  Known tag families:";
 
   TagFamily::StringArray known = TagFamily::families();
   for (size_t i=0; i<known.size(); ++i) { ostr << " " << known[i]; }
@@ -135,7 +135,7 @@ void usage(std::ostream& ostr) {
   for (int i=0; i<num_units; ++i) { ostr << units[i].name << " "; }
   ostr << "\n\n";
 
- 
+
 }
 
 int main(int argc, char** argv) {
@@ -143,13 +143,13 @@ int main(int argc, char** argv) {
   enum SizeType {
     SizeFull,
     SizeInner,
-    SizeFrac,
+    SizeFrac
   };
 
   enum MarginType {
     MT=0, MB, ML, MR
   };
-  
+
   double width = 612;
   double height = 792;
   SizeType stype = SizeFull;
@@ -177,9 +177,9 @@ int main(int argc, char** argv) {
     usage(std::cerr);
     exit(1);
   }
-  
+
   std::vector<size_t> ids;
-  
+
   if (std::string(argv[1]) == "--help") {
     usage(std::cout);
     exit(0);
@@ -293,7 +293,7 @@ int main(int argc, char** argv) {
 
   if (!sq_size) { sq_size = size * double(id)/rd; }
 
-  if (!tags_per_row) { 
+  if (!tags_per_row) {
 
     if (size > width) {
       std::cerr << "tag size wider than page!\n";
@@ -342,7 +342,7 @@ int main(int argc, char** argv) {
     for (size_t i=0; i<ids.size(); ++i) { std::cout << ids[i] << " "; }
     std::cout << "\n";
   }
-  
+
   int output_pages = int(ceil(double(ids.size()) / tags_per_page));
 
   std::cout << "tags per row: " << tags_per_row << "\n";
@@ -392,12 +392,12 @@ int main(int argc, char** argv) {
 
   double mw = margins[ML] + 0.5 * (width - size*tags_per_row - padding*(tags_per_row-1));
   double mh = margins[MT] + 0.5 * (height - row_size*rows_per_page - padding*(rows_per_page-1));
-  
+
   for (size_t i=0; i<ids.size(); ++i) {
 
-    if (newpage) { 
-      cairo_show_page(cr); 
-      newpage = false; 
+    if (newpage) {
+      cairo_show_page(cr);
+      newpage = false;
     }
 
     double x = mw + wb * px_size + col * (size + padding);
@@ -407,7 +407,7 @@ int main(int argc, char** argv) {
 
       cairo_set_line_width(cr, crop_w);
 
-      cairo_set_source_rgb(cr, 
+      cairo_set_source_rgb(cr,
                            crop_gray,
                            crop_gray,
                            crop_gray);
@@ -442,7 +442,7 @@ int main(int argc, char** argv) {
 
       cairo_move_to(cr, x1+crop_x, y1+crop_y);
       cairo_line_to(cr, x1+crop_x, y1+crop_y+crop_l);
-      
+
       cairo_stroke(cr);
 
     }
@@ -456,9 +456,9 @@ int main(int argc, char** argv) {
 
     if (draw_labels) {
 
-      cairo_set_source_rgb(cr, 
-                           label_gray, 
-                           label_gray, 
+      cairo_set_source_rgb(cr,
+                           label_gray,
+                           label_gray,
                            label_gray);
 
       //char buf[1024];
@@ -482,14 +482,14 @@ int main(int argc, char** argv) {
         size_t l = pos2-pos + 1;
 
         char buf[1024];
-        
+
         if (tolower(lstr[pos2]) == 'f') {
           lstr.replace(pos, l, argv[1]);
         } else if (tolower(lstr[pos2]) == 'i' ||
                    tolower(lstr[pos2]) == 't' ||
                    tolower(lstr[pos2]) == 'p') {
           double meas;
-          switch (tolower(lstr[pos2])) {  
+          switch (tolower(lstr[pos2])) {
           case 'i':
             meas = sq_size;
             break;
@@ -511,10 +511,10 @@ int main(int argc, char** argv) {
         start = pos2;
 
       }
-      
-      
 
-      
+
+
+
 
       cairo_text_extents_t extents;
       cairo_text_extents (cr, lstr.c_str(), &extents);
