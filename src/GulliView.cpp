@@ -339,6 +339,7 @@ int main(int argc, char** argv) {
    TagDetectionArray newDetections;
 
    int cvPose = 0;
+
    boost::asio::io_service io_service;
    udp::resolver resolver(io_service);
    udp::resolver::query query(udp::v4(), "10.0.0.100", "daytime");
@@ -754,8 +755,14 @@ int main(int argc, char** argv) {
          recv_buf[index++] = len << 16;
          recv_buf[index++] = len << 8;
          recv_buf[index++] = len;
-         socket.send_to(boost::asio::buffer(recv_buf), receiver_endpoint);
-         ++seq;
+         try {
+           socket.send_to(boost::asio::buffer(recv_buf), receiver_endpoint);
+           ++seq;
+         } catch (boost::system::system_error const& e) {
+           if (opts.debuginfo) {
+              std::cout << "Warning: " << e.what() << std::endl;
+           }
+         }
 
          }
 
