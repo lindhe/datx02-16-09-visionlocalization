@@ -733,9 +733,9 @@ int main(int argc, char** argv) {
                recv_buf[index++] = heading;
                ++len;
                string timestamp, period = "";
-               opts.timestamp ? (timestamp = " " + procTim):"";
-               opts.period ? (period = " " + perTim):"";
-               std::cout << dd.id << " " << x_coord << " " << y_coord << " "
+               opts.timestamp ? (timestamp = "\t" + procTim):"";
+               opts.period ? (period = "\t" + perTim):"";
+               std::cout << dd.id << "\t" << x_coord << "\t" << y_coord << "\t"
                   << heading << timestamp << period << std::endl;
 
                //       std::string outPut = "Tag ID: " + helper::num2str(dd.id) + " Coordinates: "
