@@ -215,6 +215,7 @@ GulliViewOptions parse_options(int argc, char** argv) {
   opts.params.adaptiveThresholdRadius += (opts.params.adaptiveThresholdRadius+1) % 2;
   return opts;
 }
+
 cv::Mat OpenWarpPerspective(const cv::Mat& _image
       , const cv::Point& _lu
       , const cv::Point& _ru
@@ -248,6 +249,8 @@ cv::Mat OpenWarpPerspective(const cv::Mat& _image
 
       return dst;
 }
+
+time_duration totalPeriod = boost::posix_time::microseconds(0);
 
 int main(int argc, char** argv) {
     //doing gracefull shutdown, prevents Linux USB system to crash
@@ -354,6 +357,9 @@ int main(int argc, char** argv) {
 
    ptime start = boost::posix_time::microsec_clock::local_time();
    ptime periodStart = boost::posix_time::microsec_clock::local_time();
+
+   int periodCount = 0;
+   bool firstDetection = true;
 
    while (1) {
 
@@ -754,9 +760,14 @@ int main(int argc, char** argv) {
                //std::cout << "---Coordinates Y---: " << y_new << "\n";
                //Get the time of full processing/timestamp for packet
 
+               if (!firstDetection) {
+                  totalPeriod += periodTime;
+               }
                /* This period reset has an accuracy of about 1 ms, compared to
                 * the timestamp */
                periodStart = boost::posix_time::microsec_clock::local_time();
+               periodCount++;
+               firstDetection = false;
             }
 
             //std::cout << newOrgX << "\n";
@@ -799,9 +810,18 @@ int main(int argc, char** argv) {
 
    }
 
+   /* averagePeriod skips the first value (through use of firstDetection), since
+    * it will always throw off the actual mean*/
+   std::string totPeriod = helper::num2str(totalPeriod);
+   long averagePeriod = totalPeriod.total_microseconds()/periodCount;
+   time_duration avgPerTmp = boost::posix_time::microseconds(averagePeriod);
+   std::string avgPer = helper::num2str(avgPerTmp);
+
+
    /* Report times of position? */
    if(opts.debuginfo){
         detector.reportTimers();
+        std::cout << "Avg. period: " << avgPer << std::endl;
    }
 
    if(opts.ueye){
