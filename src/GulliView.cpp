@@ -77,7 +77,7 @@ typedef struct GulliViewOptions {
       params(),
       family_str(DEFAULT_TAG_FAMILY),
       error_fraction(1),
-      device_num(1),
+      device_num(0),
       focal_length(906),
       tag_size(0.133),
       frame_width(0),
