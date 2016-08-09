@@ -232,16 +232,25 @@ cv::Mat OpenWarpPerspective(const cv::Mat& _image
       cv::Point2f source_points[4];
       cv::Point2f dest_points[4];
 
+#pragma omp parallel sections
+{
+    { source_points[0] = _lu; }
+#pragma omp section
+    { source_points[1] = _ru; }
+#pragma omp section
+    { source_points[2] = _rd; }
+#pragma omp section
+    { source_points[3] = _ld; }
+#pragma omp section
 
-      source_points[0] = _lu;
-      source_points[1] = _ru;
-      source_points[2] = _rd;
-      source_points[3] = _ld;
-
-      dest_points[0] = _lu_result;
-      dest_points[1] = _ru_result;
-      dest_points[2] = _rd_result;
-      dest_points[3] = _ld_result;
+    { dest_points[0] = _lu_result; }
+#pragma omp section
+    { dest_points[1] = _ru_result; }
+#pragma omp section
+    { dest_points[2] = _rd_result; }
+#pragma omp section
+    { dest_points[3] = _ld_result; }
+}
 
       cv::Mat dst;
       _transform_matrix = cv::getPerspectiveTransform(source_points, dest_points);
@@ -589,13 +598,16 @@ int main(int argc, char** argv) {
          //std::cout<<"PTS: " << pts << "\n";
 
          std::vector<at::Point>  prevDetections(detections.size());
+#pragma omp parallel for
          for (size_t i=0; i<detections.size(); ++i) {
             TagDetection &dd = detections[i];
             prevDetections[i] = at::Point(dd.cxy.x, dd.cxy.y);
          }
+
          std::vector<at::Point>  newDetections(detections.size());
          perspectiveTransform(prevDetections, newDetections, pts);
 
+#pragma omp parallel for
          for (size_t i=0; i<detections.size(); ++i) {
             TagDetection &dd = detections[i];
 
@@ -644,9 +656,17 @@ int main(int argc, char** argv) {
                   cv::Rodrigues(R, r);
 
                }
+
+        double direction;
+
+#pragma omp parallel sections
+    {
+        {
                 //Get projection vector
                 cv::projectPoints(srcmat, r, t, Kmat, distCoeffs, dstmat);
-
+        }
+#pragma omp section
+        {
                 //Calculate angle
                 std::vector<at::Point>  frontDirection(1);
                 std::vector<double>  refDirection(2);
@@ -658,11 +678,13 @@ int main(int argc, char** argv) {
                 point[0] = frontDirection[0].x/length;
                 point[1] = frontDirection[0].y/length;
                 double dotproduct = std::inner_product(point.begin(), point.end(),refDirection.begin(), 0.0);
-                double direction = acos(dotproduct) * 180.0 / PI;
+                direction = acos(dotproduct) * 180.0 / PI;
 
                 if(newDetections[i].y < dir_y){
                     direction = 360.0-direction;
                 }
+        }
+    }
 
                 //Get coordinates from projection vector and project on the plane
                 std::vector<at::Point>  prevPointDetections(1);
