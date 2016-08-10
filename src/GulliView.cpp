@@ -281,29 +281,34 @@ int main(int argc, char** argv) {
    //Buffer to hold tags and coordinates
    //char* buffer = new char[100];
    if(opts.ueye){
+
        nRet = is_InitCamera(hCamPtr, NULL);
        if(nRet == IS_SUCCESS){
            cout << "init camera success" << endl;
        }
-       nRet = is_SetColorMode(*hCamPtr, IS_CM_MONO8);
 
-//       nRet = is_SetExternalTrigger(*hCamPtr, IS_SET_TRIGGER_SOFTWARE);
+       nRet = is_SetColorMode(*hCamPtr, IS_CM_MONO8);
        if(nRet == IS_SUCCESS){
            cout << "init colormode success" << endl;
        }
-       }else{
 
-           vc.open(opts.device_num);
+       nRet = is_SetDisplayMode(*hCamPtr, IS_SET_DM_MONO);
+       if(nRet == IS_SUCCESS){
+           cout << "init displaymode success" << endl;
+       }
 
-           if (opts.frame_width && opts.frame_height) {
+   } else {
 
-      // Use uvcdynctrl to figure this out dynamically at some point?
-              vc.set(CV_CAP_PROP_FRAME_WIDTH, opts.frame_width);
-              vc.set(CV_CAP_PROP_FRAME_HEIGHT, opts.frame_height);
+       vc.open(opts.device_num);
 
+       if (opts.frame_width && opts.frame_height) {
 
-           }
-     }
+           // Use uvcdynctrl to figure this out dynamically at some point?
+           vc.set(CV_CAP_PROP_FRAME_WIDTH, opts.frame_width);
+           vc.set(CV_CAP_PROP_FRAME_HEIGHT, opts.frame_height);
+
+       }
+   }
 
    if (opts.error_fraction >= 1 && opts.error_fraction <= 1) {
       family.setErrorRecoveryFraction(opts.error_fraction);
